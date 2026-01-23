@@ -5,7 +5,7 @@ type AttributeFieldProps = {
   value: number;
 }
 
-const AttributeField = ({label, value}) => {
+const AttributeField = ({label, value}: AttributeFieldProps) => {
   return (
     <div className="flex w-fit h-fit justify-center">
       <p className="mt-0.5 absolute text-lg font-bold">{label}</p>
