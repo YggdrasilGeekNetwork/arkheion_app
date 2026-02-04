@@ -11,31 +11,35 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { CombatAction, WeaponAttack } from '~/types/character'
+import type { CombatAction, WeaponAttack, Ability } from '~/types/character'
 import ActionItem from './ActionItem'
 import WeaponItem from './WeaponItem'
+import AbilityItem from './AbilityItem'
 
 type FavoritesSectionProps = {
   actions: CombatAction[]
   weapons: WeaponAttack[]
+  abilities?: Ability[]
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
+  onUseAbility?: (ability: Ability) => void
   onRollDamage: (weapon: WeaponAttack) => void
-  onReorderFavorites: (weapons: WeaponAttack[], actions: CombatAction[]) => void
+  onReorderFavorites: (weapons: WeaponAttack[], actions: CombatAction[], abilities?: Ability[]) => void
 }
 
 type FavoriteItem = {
   id: string
-  type: 'weapon' | 'action'
+  type: 'weapon' | 'action' | 'ability'
   order: number
-  data: WeaponAttack | CombatAction
+  data: WeaponAttack | CombatAction | Ability
 }
 
 // Sortable Item Component
-function SortableItem({ item, onUseAction, onUseWeapon, onRollDamage }: {
+function SortableItem({ item, onUseAction, onUseWeapon, onUseAbility, onRollDamage }: {
   item: FavoriteItem
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
+  onUseAbility?: (ability: Ability) => void
   onRollDamage: (weapon: WeaponAttack) => void
 }) {
   const {
@@ -75,6 +79,12 @@ function SortableItem({ item, onUseAction, onUseWeapon, onRollDamage }: {
             onRollDamage={onRollDamage}
             compact={true}
           />
+        ) : item.type === 'ability' ? (
+          <AbilityItem
+            ability={item.data as Ability}
+            onUse={onUseAbility || (() => {})}
+            compact={true}
+          />
         ) : (
           <ActionItem
             action={item.data as CombatAction}
@@ -90,8 +100,10 @@ function SortableItem({ item, onUseAction, onUseWeapon, onRollDamage }: {
 export default function FavoritesSection({
   actions,
   weapons,
+  abilities = [],
   onUseAction,
   onUseWeapon,
+  onUseAbility,
   onRollDamage,
   onReorderFavorites,
 }: FavoritesSectionProps) {
@@ -99,6 +111,7 @@ export default function FavoritesSection({
 
   const favoriteActions = actions.filter(a => a.isFavorite)
   const favoriteWeapons = weapons.filter(w => w.isFavorite)
+  const favoriteAbilities = abilities.filter(a => a.isFavorite && a.type === 'active')
 
   // Configure sensors to require movement before drag starts
   const sensors = useSensors(
@@ -120,6 +133,12 @@ export default function FavoritesSection({
     ...favoriteActions.map(a => ({
       id: a.id,
       type: 'action' as const,
+      order: a.favoriteOrder ?? 999999,
+      data: a
+    })),
+    ...favoriteAbilities.map(a => ({
+      id: a.id,
+      type: 'ability' as const,
       order: a.favoriteOrder ?? 999999,
       data: a
     }))
@@ -154,12 +173,18 @@ export default function FavoritesSection({
     // Assign new order numbers
     const updatedWeapons = [...weapons]
     const updatedActions = [...actions]
+    const updatedAbilities = [...abilities]
 
     newItems.forEach((item, index) => {
       if (item.type === 'weapon') {
         const weaponIndex = updatedWeapons.findIndex(w => w.id === item.id)
         if (weaponIndex !== -1) {
           updatedWeapons[weaponIndex] = { ...updatedWeapons[weaponIndex], favoriteOrder: index }
+        }
+      } else if (item.type === 'ability') {
+        const abilityIndex = updatedAbilities.findIndex(a => a.id === item.id)
+        if (abilityIndex !== -1) {
+          updatedAbilities[abilityIndex] = { ...updatedAbilities[abilityIndex], favoriteOrder: index }
         }
       } else {
         const actionIndex = updatedActions.findIndex(a => a.id === item.id)
@@ -169,7 +194,7 @@ export default function FavoritesSection({
       }
     })
 
-    onReorderFavorites(updatedWeapons, updatedActions)
+    onReorderFavorites(updatedWeapons, updatedActions, updatedAbilities)
   }
 
   return (
@@ -200,6 +225,7 @@ export default function FavoritesSection({
                 item={item}
                 onUseAction={onUseAction}
                 onUseWeapon={onUseWeapon}
+                onUseAbility={onUseAbility}
                 onRollDamage={onRollDamage}
               />
             ))}
@@ -215,6 +241,12 @@ export default function FavoritesSection({
                 weapon={activeItem.data as WeaponAttack}
                 onUse={onUseWeapon}
                 onRollDamage={onRollDamage}
+                compact={true}
+              />
+            ) : activeItem.type === 'ability' ? (
+              <AbilityItem
+                ability={activeItem.data as Ability}
+                onUse={onUseAbility || (() => {})}
                 compact={true}
               />
             ) : (

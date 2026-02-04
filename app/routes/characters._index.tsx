@@ -57,9 +57,12 @@ export default function Characters() {
           <h1 className="text-4xl font-bold text-accent mb-2">Meus Personagens</h1>
           <p className="text-muted">Escolha um personagem ou crie um novo</p>
         </div>
-        <button className="px-4 py-2 bg-accent text-card rounded hover:bg-accent-hover transition-colors font-semibold">
+        <Link
+          to="/characters/new"
+          className="px-4 py-2 bg-accent text-card rounded hover:bg-accent-hover transition-colors font-semibold"
+        >
           + Novo Personagem
-        </button>
+        </Link>
       </div>
 
       {/* Characters Grid */}
@@ -68,9 +71,12 @@ export default function Characters() {
           <div className="text-6xl mb-4">📜</div>
           <h2 className="text-2xl font-bold mb-2">Nenhum personagem ainda</h2>
           <p className="text-muted mb-6">Crie seu primeiro personagem para começar sua aventura</p>
-          <button className="px-6 py-3 bg-accent text-card rounded hover:bg-accent-hover transition-colors font-semibold">
+          <Link
+            to="/characters/new"
+            className="inline-block px-6 py-3 bg-accent text-card rounded hover:bg-accent-hover transition-colors font-semibold"
+          >
             Criar Personagem
-          </button>
+          </Link>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,4 +1,4 @@
-import type { Character, Sense, Proficiency } from '~/types/character'
+import type { Character, Sense, Proficiency, Currencies, ActiveEffect, EquippedItems, EquipmentItem } from '~/types/character'
 import Rollable from '../Rollable'
 import HealthCard from '../HealthCard'
 import ManaCard from '../ManaCard'
@@ -9,7 +9,9 @@ import SpellDCCard from '../SpellDCCard'
 import InitiativeCard from '../InitiativeCard'
 import SensesCard from '../SensesCard'
 import ProficienciesCard from '../ProficienciesCard'
-import EquipmentCard from '../EquipmentCard'
+import EquippedItemsSummaryCard from '../EquippedItemsSummaryCard'
+import CurrencyCard from '../CurrencyCard'
+import ActiveEffectsSection from '../ActiveEffectsSection'
 
 type SummaryTabProps = {
   character: Character
@@ -24,9 +26,15 @@ type SummaryTabProps = {
   onSwitchToCombat: () => void
   onSensesChange: (newSenses: Sense[]) => void
   onProficienciesChange: (newProficiencies: Proficiency[]) => void
-  onEquippedItemsChange: (newItems: typeof character.equippedItems) => void
-  onBackpackChange: (newBackpack: typeof character.backpack) => void
-  onCurrenciesChange: (newCurrencies: typeof character.currencies) => void
+  onCurrenciesChange: (newCurrencies: Currencies) => void
+  onEquippedItemsChange: (newItems: EquippedItems) => void
+  onBackpackChange: (newBackpack: (EquipmentItem | null)[]) => void
+  onUseConsumable: (item: EquipmentItem, source: 'equipped' | 'backpack', slotKey: string) => void
+  activeEffects: ActiveEffect[]
+  onClearEffect: (effectId: string) => void
+  onClearEffectsByDuration: (duration: string) => void
+  onClearAllEffects: () => void
+  onCombatAction: (description: string, actionCost: string, execute: () => void) => void
 }
 
 export default function SummaryTab({
@@ -42,9 +50,15 @@ export default function SummaryTab({
   onSwitchToCombat,
   onSensesChange,
   onProficienciesChange,
+  onCurrenciesChange,
   onEquippedItemsChange,
   onBackpackChange,
-  onCurrenciesChange,
+  onUseConsumable,
+  activeEffects,
+  onClearEffect,
+  onClearEffectsByDuration,
+  onClearAllEffects,
+  onCombatAction,
 }: SummaryTabProps) {
   return (
     <>
@@ -158,15 +172,25 @@ export default function SummaryTab({
       {/* Separator */}
       <div className="h-px bg-stroke mb-[1vh]" />
 
-      {/* Equipment Section */}
-      <EquipmentCard
-        desModifier={character.attributes.find(a => a.label === 'DES')?.modifier || 0}
-        equippedItems={character.equippedItems}
-        backpack={character.backpack}
-        currencies={character.currencies}
-        onBackpackChange={onBackpackChange}
-        onEquippedItemsChange={onEquippedItemsChange}
-        onCurrenciesChange={onCurrenciesChange}
+      {/* Equipment and Currency Section */}
+      <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
+        <EquippedItemsSummaryCard
+          character={character}
+          onEquippedItemsChange={onEquippedItemsChange}
+          onBackpackChange={onBackpackChange}
+          onUseConsumable={onUseConsumable}
+          onCombatAction={onCombatAction}
+        />
+        <CurrencyCard currencies={character.currencies} onCurrenciesChange={onCurrenciesChange} />
+      </div>
+
+      {/* Active Effects Section */}
+      <ActiveEffectsSection
+        character={character}
+        activeEffects={activeEffects}
+        onClearEffect={onClearEffect}
+        onClearEffectsByDuration={onClearEffectsByDuration}
+        onClearAllEffects={onClearAllEffects}
       />
     </>
   )

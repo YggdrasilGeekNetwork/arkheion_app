@@ -1,8 +1,9 @@
-import type { Character, CombatAction, WeaponAttack } from '~/types/character'
+import type { Character, CombatAction, WeaponAttack, Ability } from '~/types/character'
 import InitiativeRoller from '../InitiativeRoller'
 import ActionIndicator from '../ActionIndicator'
 import FavoritesSection from '../FavoritesSection'
 import ActionsCollapsible from '../ActionsCollapsible'
+import AbilitiesCollapsible from '../AbilitiesCollapsible'
 import WeaponModal from '../WeaponModal'
 import ChoiceModal from '../ChoiceModal'
 
@@ -13,11 +14,14 @@ type CombatTabDesktopProps = {
   pendingAction: CombatAction | null
   onStartTurn: () => void
   onRollInitiative: (result: number) => void
+  onToggleCombat: () => void
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
+  onUseAbility?: (ability: Ability) => void
   onRollDamage: (weapon: WeaponAttack) => void
-  onReorderFavorites: (newWeapons: WeaponAttack[], newActions: CombatAction[]) => void
+  onReorderFavorites: (newWeapons: WeaponAttack[], newActions: CombatAction[], newAbilities?: Ability[]) => void
   onToggleFavoriteAction: (actionId: string) => void
+  onToggleFavoriteAbility?: (abilityId: string) => void
   onSetWeaponModalOpen: (open: boolean) => void
   onAddWeapon: (weapon: Omit<WeaponAttack, 'id'>) => void
   onUpdateWeapon: (weaponId: string, weaponData: Omit<WeaponAttack, 'id' | 'isFavorite'>) => Promise<void>
@@ -34,11 +38,14 @@ export default function CombatTabDesktop({
   pendingAction,
   onStartTurn,
   onRollInitiative,
+  onToggleCombat,
   onUseAction,
   onUseWeapon,
+  onUseAbility,
   onRollDamage,
   onReorderFavorites,
   onToggleFavoriteAction,
+  onToggleFavoriteAbility,
   onSetWeaponModalOpen,
   onAddWeapon,
   onUpdateWeapon,
@@ -60,16 +67,20 @@ export default function CombatTabDesktop({
                 onStartTurn={onStartTurn}
                 onRollInitiative={onRollInitiative}
                 isMyTurn={character.isMyTurn}
+                inCombat={character.inCombat}
+                onToggleCombat={onToggleCombat}
               />
             </td>
           </tr>
 
-          {/* Action Indicator Row */}
-          <tr>
-            <td className="p-0">
-              <ActionIndicator availableActions={character.availableActions} />
-            </td>
-          </tr>
+          {/* Action Indicator Row - Only show in combat */}
+          {character.inCombat && (
+            <tr>
+              <td className="p-0">
+                <ActionIndicator availableActions={character.availableActions} />
+              </td>
+            </tr>
+          )}
 
           {/* Favorites Row */}
           <tr>
@@ -77,8 +88,10 @@ export default function CombatTabDesktop({
               <FavoritesSection
                 actions={character.actionsList}
                 weapons={character.weapons}
+                abilities={character.abilities}
                 onUseAction={onUseAction}
                 onUseWeapon={onUseWeapon}
+                onUseAbility={onUseAbility}
                 onRollDamage={onRollDamage}
                 onReorderFavorites={onReorderFavorites}
               />
@@ -89,7 +102,7 @@ export default function CombatTabDesktop({
           <tr style={{ height: '100%' }}>
             <td className="p-0" style={{ height: '100%', verticalAlign: 'top' }}>
               <div
-                className="overflow-y-auto"
+                className="overflow-y-auto space-y-2"
                 style={{
                   height: '100%',
                   minHeight: '200px',
@@ -101,6 +114,13 @@ export default function CombatTabDesktop({
                   onUseAction={onUseAction}
                   onToggleFavorite={onToggleFavoriteAction}
                 />
+                {character.abilities && onUseAbility && onToggleFavoriteAbility && (
+                  <AbilitiesCollapsible
+                    abilities={character.abilities}
+                    onUseAbility={onUseAbility}
+                    onToggleFavorite={onToggleFavoriteAbility}
+                  />
+                )}
               </div>
             </td>
           </tr>

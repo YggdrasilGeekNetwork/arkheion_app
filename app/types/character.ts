@@ -43,10 +43,112 @@ export type Skill = {
   otherBonuses?: Array<{ label: string; value: number }> // Outros bônus com origem
 }
 
+export type ItemEffect = {
+  id: string
+  name: string
+  description: string
+  type: 'passive' | 'active' | 'consumable'
+  // For passive effects (automatically applied when equipped)
+  passiveModifiers?: {
+    attribute?: { label: string; bonus: number } // e.g., +2 FOR
+    defense?: { type: string; bonus: number } // e.g., +1 CA
+    resistance?: { type: string; bonus: number } // e.g., +3 Fortitude
+    skill?: { name: string; bonus: number } // e.g., +5 Percepção
+    other?: { label: string; value: string } // Custom effects
+  }
+  // For active/consumable effects
+  activeAbility?: {
+    name: string
+    description: string
+    actionType: 'standard' | 'movement' | 'free' | 'full' | 'reaction'
+    cost?: { pm?: number; pv?: number }
+    usesPerDay?: number
+    consumeItem?: boolean // If true, item is consumed when used
+  }
+}
+
 export type EquipmentItem = {
   id: string
   name: string
   description?: string
+  quantity?: number
+  weight?: number // Weight per unit in kg
+  spaces?: number // Spaces occupied (for carry capacity)
+  price?: number // Price in TP (Tibares de Prata)
+  category?: 'weapon' | 'armor' | 'equipment' | 'alchemical' | 'tool' | 'clothing' | 'esoteric' | 'food' | 'other'
+  effects?: ItemEffect[] // Item effects (passive or active)
+}
+
+export type ActiveEffect = {
+  id: string
+  name: string
+  description: string
+  source: string
+  type: 'active' | 'consumable'
+  duration?: string
+  modifiers?: ItemEffect['passiveModifiers']
+  consumeOnAttack?: boolean // If true, effect is removed when an attack is made
+}
+
+export type Ability = {
+  id: string
+  name: string
+  description: string
+  type: 'active' | 'passive'
+  actionType?: 'standard' | 'movement' | 'free' | 'full' | 'reaction'
+  cost?: { pm?: number; pv?: number }
+  usesPerDay?: number
+  source?: string
+  isFavorite?: boolean
+  favoriteOrder?: number
+}
+
+export type SpellEffect = {
+  type: string // 'bônus', 'dano', etc.
+  attribute?: string // 'ca', 'ataque', etc.
+  amount?: string // '+4', '2d6', etc.
+  resistanceRequirement?: string
+  extraRequirements?: string
+}
+
+export type SpellEnhancement = {
+  cost: number // PM cost
+  type: 'muda' | 'aumenta'
+  description: string
+  extraDetails?: {
+    execution?: string
+    duration?: string
+    circle?: number
+    effects?: SpellEffect[]
+  }
+}
+
+export type SpellTarget = {
+  amount?: number | null
+  upTo?: number | null
+  type: string // 'você', 'uma criatura', etc.
+}
+
+export type Spell = {
+  id: string
+  name: string
+  type: 'arcana' | 'divina'
+  circle: number
+  school: string // 'abjur', 'evoc', 'trans', 'necro', 'adiv', 'encan', 'ilusão', 'conv'
+  execution: string // 'padrão', 'movimento', 'completa', 'reação', 'livre'
+  executionDetails?: string
+  range: string // 'pessoal', 'toque', 'curto', 'médio', 'longo'
+  target?: SpellTarget
+  areaEffect?: string
+  areaEffectDetails?: string
+  counterspell?: string
+  duration: string
+  durationDetails?: string
+  resistance?: string // 'Fortitude', 'Reflexos', 'Vontade'
+  extraCosts?: string
+  description: string
+  enhancements?: SpellEnhancement[]
+  effects?: SpellEffect[]
 }
 
 export type EquippedItems = {
@@ -110,7 +212,8 @@ export type Character = {
   // Combat
   resistances: Resistance[]
   defenses: Defense[]
-  initiativeRoll: number
+  inCombat?: boolean
+  initiativeRoll: number | null
   isMyTurn: boolean
   turnOrder: number
   availableActions: AvailableActions
@@ -119,6 +222,10 @@ export type Character = {
 
   // Skills
   skills: Skill[]
+
+  // Abilities & Spells
+  abilities?: Ability[]
+  spells?: Spell[]
 
   // Equipment
   equippedItems: EquippedItems

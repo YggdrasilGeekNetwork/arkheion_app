@@ -7,7 +7,7 @@ import { DiceRollProvider } from '~/contexts/DiceRollContext'
 import { useDiceRoll } from '~/contexts/DiceRollContext'
 import { useCharacter } from '~/contexts/CharacterContext'
 import DiceRollDisplay from './DiceRollDisplay'
-import type { CombatAction, WeaponAttack, AvailableActions } from '~/types/character'
+import type { CombatAction, WeaponAttack, AvailableActions, ActiveEffect, EquipmentItem, Ability } from '~/types/character'
 import { getTotalLevel } from '~/utils/tormenta20'
 import SummaryTab from './tabs/SummaryTab'
 import CombatTab from './tabs/CombatTab'
@@ -15,6 +15,15 @@ import AbilitiesTab from './tabs/AbilitiesTab'
 import InventoryTab from './tabs/InventoryTab'
 import OtherTab from './tabs/OtherTab'
 import DesktopView from './tabs/DesktopView'
+import Modal from '~/components/ui/Modal'
+
+const ACTION_COST_LABELS: Record<string, string> = {
+  standard: 'Ação Padrão',
+  movement: 'Ação de Movimento',
+  free: 'Ação Livre',
+  full: 'Ação Completa',
+  reaction: 'Reação',
+}
 
 type CharacterSheetInnerProps = {
   onBackToCharacters?: () => void
@@ -112,6 +121,13 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
       visible: false
     },
   ])
+
+  const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([])
+  const [pendingCombatConfirmation, setPendingCombatConfirmation] = useState<{
+    description: string
+    actionCost: string
+    execute: () => void
+  } | null>(null)
 
   const [weaponModalOpen, setWeaponModalOpen] = useState(false)
   const [choiceModalOpen, setChoiceModalOpen] = useState(false)
@@ -270,6 +286,102 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
     }
   }
 
+  const handleUseConsumable = async (item: EquipmentItem, source: 'equipped' | 'backpack', slotKey: string) => {
+    setIsUpdating(true)
+    try {
+      if (source === 'equipped') {
+        const newEquipped = { ...character.equippedItems }
+        if (item.quantity && item.quantity > 1) {
+          newEquipped[slotKey as keyof typeof newEquipped] = { ...item, quantity: item.quantity - 1 }
+        } else {
+          newEquipped[slotKey as keyof typeof newEquipped] = null
+        }
+        await optimisticDispatch({ type: 'UPDATE_EQUIPPED_ITEMS', payload: newEquipped })
+      } else {
+        const newBackpack = [...character.backpack]
+        const index = parseInt(slotKey)
+        if (item.quantity && item.quantity > 1) {
+          newBackpack[index] = { ...item, quantity: item.quantity - 1 }
+        } else {
+          newBackpack[index] = null
+        }
+        await optimisticDispatch({ type: 'UPDATE_BACKPACK', payload: newBackpack })
+      }
+
+      const consumableEffects = item.effects?.filter(e => e.type === 'consumable') || []
+      const newEffects: ActiveEffect[] = consumableEffects.map(effect => ({
+        id: `effect-${Date.now()}-${effect.id}`,
+        name: effect.name,
+        description: effect.description,
+        source: item.name,
+        type: 'consumable' as const,
+        duration: 'até descansar',
+        modifiers: effect.passiveModifiers,
+      }))
+      setActiveEffects(prev => [...prev, ...newEffects])
+    } catch (error) {
+      console.error('Failed to use consumable:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleClearEffect = (effectId: string) => {
+    setActiveEffects(prev => prev.filter(e => e.id !== effectId))
+  }
+
+  const handleClearEffectsByDuration = (duration: string) => {
+    setActiveEffects(prev => prev.filter(e => (e.duration || 'permanente') !== duration))
+  }
+
+  const handleClearAllEffects = () => {
+    setActiveEffects([])
+  }
+
+  const handleAddActiveEffect = (effect: {
+    name: string
+    description: string
+    source: string
+    type: 'active' | 'consumable'
+    duration?: string
+    consumeOnAttack?: boolean
+  }) => {
+    const newEffect: ActiveEffect = {
+      id: `effect-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+      name: effect.name,
+      description: effect.description,
+      source: effect.source,
+      type: effect.type,
+      duration: effect.duration,
+      consumeOnAttack: effect.consumeOnAttack,
+    }
+    setActiveEffects(prev => [...prev, newEffect])
+  }
+
+  const handleCombatAction = (description: string, actionCost: string, execute: () => void) => {
+    if (!character.inCombat) {
+      execute()
+      return
+    }
+    setPendingCombatConfirmation({ description, actionCost, execute })
+  }
+
+  const handleConfirmCombatAction = async () => {
+    if (!pendingCombatConfirmation) return
+    const { actionCost, execute } = pendingCombatConfirmation
+    if (actionCost !== 'free') {
+      const currentAmount = character.availableActions[actionCost as keyof typeof character.availableActions] || 0
+      if (currentAmount > 0) {
+        await optimisticDispatch({
+          type: 'UPDATE_AVAILABLE_ACTIONS',
+          payload: { [actionCost]: currentAmount - 1 },
+        })
+      }
+    }
+    execute()
+    setPendingCombatConfirmation(null)
+  }
+
   // Combat tab handlers
   const handleRollInitiative = async (result: number) => {
     console.log('🎲 handleRollInitiative called with:', result)
@@ -298,8 +410,46 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
       }))
       await optimisticDispatch({ type: 'UPDATE_ACTIONS_LIST', payload: resetActions })
       await optimisticDispatch({ type: 'START_TURN' })
+
+      // Process active effect durations
+      setActiveEffects(prev =>
+        prev
+          .map(effect => {
+            const duration = effect.duration || ''
+            const turnMatch = duration.match(/^(\d+)\s*turno(s)?$/)
+            if (turnMatch) {
+              const turns = parseInt(turnMatch[1])
+              if (turns <= 1) return null
+              return { ...effect, duration: turns - 1 === 1 ? '1 turno' : `${turns - 1} turnos` }
+            }
+            return effect
+          })
+          .filter((effect): effect is ActiveEffect => effect !== null)
+      )
     } catch (error) {
       console.error('Failed to start turn:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleToggleCombat = async () => {
+    setIsUpdating(true)
+    try {
+      const newCombatState = !character.inCombat
+      await optimisticDispatch({
+        type: 'TOGGLE_COMBAT',
+        payload: newCombatState,
+      })
+
+      // If ending combat, reset available actions
+      if (!newCombatState) {
+        await optimisticDispatch({
+          type: 'RESET_ACTIONS',
+        })
+      }
+    } catch (error) {
+      console.error('Failed to toggle combat:', error)
     } finally {
       setIsUpdating(false)
     }
@@ -482,6 +632,9 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
 
       // Roll attack: d20 + attribute modifier + attack bonus
       addRoll(`Ataque: ${weapon.name}`, totalAttackBonus, 20)
+
+      // Remove effects that are consumed on attack
+      setActiveEffects(prev => prev.filter(e => !e.consumeOnAttack))
     } catch (error) {
       console.error('Failed to use weapon:', error)
     } finally {
@@ -513,7 +666,7 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
     }
   }
 
-  const handleReorderFavorites = async (newWeapons: WeaponAttack[], newActions: CombatAction[]) => {
+  const handleReorderFavorites = async (newWeapons: WeaponAttack[], newActions: CombatAction[], newAbilities?: Ability[]) => {
     setIsUpdating(true)
     try {
       await optimisticDispatch({
@@ -524,8 +677,74 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
         type: 'UPDATE_ACTIONS_LIST',
         payload: newActions,
       })
+      if (newAbilities) {
+        await optimisticDispatch({
+          type: 'UPDATE_ABILITIES',
+          payload: newAbilities,
+        })
+      }
     } catch (error) {
       console.error('Failed to reorder favorites:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleToggleFavoriteAbility = async (abilityId: string) => {
+    const updatedAbilities = (character.abilities || []).map(a =>
+      a.id === abilityId ? { ...a, isFavorite: !a.isFavorite } : a
+    )
+    setIsUpdating(true)
+    try {
+      await optimisticDispatch({
+        type: 'UPDATE_ABILITIES',
+        payload: updatedAbilities,
+      })
+    } catch (error) {
+      console.error('Failed to toggle favorite ability:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleUseAbility = async (ability: Ability) => {
+    setIsUpdating(true)
+    try {
+      // Consume action based on ability type
+      if (ability.actionType && ability.actionType !== 'free') {
+        const currentAmount = character.availableActions[ability.actionType as keyof typeof character.availableActions] || 0
+        if (currentAmount > 0) {
+          await optimisticDispatch({
+            type: 'UPDATE_AVAILABLE_ACTIONS',
+            payload: { [ability.actionType]: currentAmount - 1 },
+          })
+        }
+      }
+
+      // Deduct costs
+      if (ability.cost?.pv) {
+        await optimisticDispatch({
+          type: 'UPDATE_HEALTH',
+          payload: character.health - ability.cost.pv,
+        })
+      }
+      if (ability.cost?.pm) {
+        await optimisticDispatch({
+          type: 'UPDATE_MANA',
+          payload: character.mana - ability.cost.pm,
+        })
+      }
+
+      // Add active effect
+      handleAddActiveEffect({
+        name: ability.name,
+        description: ability.description,
+        source: ability.source || 'Habilidade',
+        type: 'active',
+        duration: ability.usesPerDay !== undefined ? 'até descansar' : undefined,
+      })
+    } catch (error) {
+      console.error('Failed to use ability:', error)
     } finally {
       setIsUpdating(false)
     }
@@ -594,6 +813,12 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
             onEquippedItemsChange={handleEquippedItemsChange}
             onBackpackChange={handleBackpackChange}
             onCurrenciesChange={handleCurrenciesChange}
+            onUseConsumable={handleUseConsumable}
+            activeEffects={activeEffects}
+            onClearEffect={handleClearEffect}
+            onClearEffectsByDuration={handleClearEffectsByDuration}
+            onClearAllEffects={handleClearAllEffects}
+            onCombatAction={handleCombatAction}
           />
         )}
 
@@ -610,12 +835,15 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
             onConRoll={handleConRoll}
             onStartTurn={handleStartTurn}
             onRollInitiative={handleRollInitiative}
+            onToggleCombat={handleToggleCombat}
             onSkillsChange={handleSkillsChange}
             onUseAction={handleUseAction}
             onUseWeapon={handleUseWeapon}
+            onUseAbility={handleUseAbility}
             onRollDamage={handleRollDamage}
             onReorderFavorites={handleReorderFavorites}
             onToggleFavoriteAction={handleToggleFavoriteAction}
+            onToggleFavoriteAbility={handleToggleFavoriteAbility}
             onSetWeaponModalOpen={setWeaponModalOpen}
             onAddWeapon={handleAddWeapon}
             onUpdateWeapon={handleUpdateWeapon}
@@ -627,7 +855,12 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
         )}
 
         {/* HABILIDADES TAB */}
-        {activeNav === 'abilities' && <AbilitiesTab />}
+        {activeNav === 'abilities' && (
+          <AbilitiesTab
+            character={character}
+            onAddActiveEffect={handleAddActiveEffect}
+          />
+        )}
 
         {/* INVENTÁRIO TAB */}
         {activeNav === 'inventory' && (
@@ -636,6 +869,8 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
             onBackpackChange={handleBackpackChange}
             onEquippedItemsChange={handleEquippedItemsChange}
             onCurrenciesChange={handleCurrenciesChange}
+            onUseConsumable={handleUseConsumable}
+            onCombatAction={handleCombatAction}
           />
         )}
 
@@ -664,6 +899,7 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           onBleedingRoll={handleBleedingRoll}
           onConRoll={handleConRoll}
           onRollInitiative={handleRollInitiative}
+          onToggleCombat={handleToggleCombat}
           onSwitchToCombat={() => setActiveNav('combat')}
           onSensesChange={setSenses}
           onProficienciesChange={setProficiencies}
@@ -675,9 +911,11 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           onStartTurn={handleStartTurn}
           onUseAction={handleUseAction}
           onUseWeapon={handleUseWeapon}
+          onUseAbility={handleUseAbility}
           onRollDamage={handleRollDamage}
           onReorderFavorites={handleReorderFavorites}
           onToggleFavoriteAction={handleToggleFavoriteAction}
+          onToggleFavoriteAbility={handleToggleFavoriteAbility}
           onSetWeaponModalOpen={setWeaponModalOpen}
           onAddWeapon={handleAddWeapon}
           onUpdateWeapon={handleUpdateWeapon}
@@ -685,6 +923,13 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           onToggleFavoriteWeapon={handleToggleFavoriteWeapon}
           onSetChoiceModalOpen={setChoiceModalOpen}
           onChoiceSelect={handleChoiceSelect}
+          onUseConsumable={handleUseConsumable}
+          activeEffects={activeEffects}
+          onClearEffect={handleClearEffect}
+          onClearEffectsByDuration={handleClearEffectsByDuration}
+          onClearAllEffects={handleClearAllEffects}
+          onCombatAction={handleCombatAction}
+          onAddActiveEffect={handleAddActiveEffect}
         />
       </div>
 
@@ -697,6 +942,39 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           isFixed={false}
         />
       </div>
+
+      {/* Combat Confirmation Modal */}
+      <Modal
+        isOpen={pendingCombatConfirmation !== null}
+        onClose={() => setPendingCombatConfirmation(null)}
+        title="Confirmação de Ação"
+      >
+        {pendingCombatConfirmation && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted">Você está em combate.</p>
+              <p className="text-sm mt-1">{pendingCombatConfirmation.description}</p>
+              <p className="text-sm font-semibold text-yellow-400 mt-2">
+                Custo: {ACTION_COST_LABELS[pendingCombatConfirmation.actionCost] || pendingCombatConfirmation.actionCost}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleConfirmCombatAction}
+                className="flex-1 py-2 bg-accent text-card rounded hover:bg-accent-hover transition-colors text-sm font-semibold"
+              >
+                Prosseguir
+              </button>
+              <button
+                onClick={() => setPendingCombatConfirmation(null)}
+                className="flex-1 py-2 bg-card-muted border border-stroke rounded hover:border-accent transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Resurrection Overlay */}
       {isDead && (

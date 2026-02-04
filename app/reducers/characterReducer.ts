@@ -1,4 +1,4 @@
-import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack } from '~/types/character'
+import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability } from '~/types/character'
 
 export type CharacterAction =
   | { type: 'SET_CHARACTER'; payload: Character }
@@ -11,11 +11,14 @@ export type CharacterAction =
   | { type: 'UPDATE_INITIATIVE_ROLL'; payload: number }
   | { type: 'START_TURN' }
   | { type: 'END_TURN' }
+  | { type: 'TOGGLE_COMBAT'; payload: boolean }
+  | { type: 'RESET_ACTIONS' }
   | { type: 'UPDATE_ATTRIBUTES'; payload: Attribute[] }
   | { type: 'UPDATE_RESISTANCES'; payload: Resistance[] }
   | { type: 'UPDATE_SKILLS'; payload: Skill[] }
   | { type: 'UPDATE_ACTIONS_LIST'; payload: CombatAction[] }
   | { type: 'UPDATE_WEAPONS'; payload: WeaponAttack[] }
+  | { type: 'UPDATE_ABILITIES'; payload: Ability[] }
   | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; update: Partial<Character> } }
   | { type: 'REVERT_OPTIMISTIC'; payload: string }
   | { type: 'CONFIRM_OPTIMISTIC'; payload: string }
@@ -159,6 +162,37 @@ export function characterReducer(state: CharacterState, action: CharacterAction)
         },
       }
 
+    case 'TOGGLE_COMBAT':
+      if (!state.character) return state
+      return {
+        ...state,
+        character: {
+          ...state.character,
+          inCombat: action.payload,
+          version: state.character.version + 1,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+
+    case 'RESET_ACTIONS':
+      if (!state.character) return state
+      return {
+        ...state,
+        character: {
+          ...state.character,
+          availableActions: {
+            standard: 1,
+            movement: 1,
+            free: 1,
+            full: 1,
+            reactions: 1,
+          },
+          isMyTurn: false,
+          version: state.character.version + 1,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+
     case 'UPDATE_ATTRIBUTES':
       if (!state.character) return state
       return {
@@ -214,6 +248,18 @@ export function characterReducer(state: CharacterState, action: CharacterAction)
         character: {
           ...state.character,
           weapons: action.payload,
+          version: state.character.version + 1,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+
+    case 'UPDATE_ABILITIES':
+      if (!state.character) return state
+      return {
+        ...state,
+        character: {
+          ...state.character,
+          abilities: action.payload,
           version: state.character.version + 1,
           updatedAt: new Date().toISOString(),
         },

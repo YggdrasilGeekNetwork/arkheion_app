@@ -1,4 +1,4 @@
-import type { Character, CombatAction, WeaponAttack } from '~/types/character'
+import type { Character, CombatAction, WeaponAttack, Ability } from '~/types/character'
 import InitiativeRoller from '../InitiativeRoller'
 import HealthCard from '../HealthCard'
 import ManaCard from '../ManaCard'
@@ -7,6 +7,7 @@ import DefenseCard from '../DefenseCard'
 import SkillsCard from '../SkillsCard'
 import FavoritesSection from '../FavoritesSection'
 import ActionsCollapsible from '../ActionsCollapsible'
+import AbilitiesCollapsible from '../AbilitiesCollapsible'
 import WeaponModal from '../WeaponModal'
 import ChoiceModal from '../ChoiceModal'
 
@@ -21,12 +22,15 @@ type CombatTabProps = {
   onConRoll: () => void
   onStartTurn: () => void
   onRollInitiative: (result: number) => void
-  onSkillsChange: (newSkills: typeof character.skills) => void
+  onToggleCombat: () => void
+  onSkillsChange: (newSkills: Character['skills']) => void
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
+  onUseAbility?: (ability: Ability) => void
   onRollDamage: (weapon: WeaponAttack) => void
-  onReorderFavorites: (newWeapons: WeaponAttack[], newActions: CombatAction[]) => void
+  onReorderFavorites: (newWeapons: WeaponAttack[], newActions: CombatAction[], newAbilities?: Ability[]) => void
   onToggleFavoriteAction: (actionId: string) => void
+  onToggleFavoriteAbility?: (abilityId: string) => void
   onSetWeaponModalOpen: (open: boolean) => void
   onAddWeapon: (weapon: Omit<WeaponAttack, 'id'>) => void
   onUpdateWeapon: (weaponId: string, weaponData: Omit<WeaponAttack, 'id' | 'isFavorite'>) => Promise<void>
@@ -47,12 +51,15 @@ export default function CombatTab({
   onConRoll,
   onStartTurn,
   onRollInitiative,
+  onToggleCombat,
   onSkillsChange,
   onUseAction,
   onUseWeapon,
+  onUseAbility,
   onRollDamage,
   onReorderFavorites,
   onToggleFavoriteAction,
+  onToggleFavoriteAbility,
   onSetWeaponModalOpen,
   onAddWeapon,
   onUpdateWeapon,
@@ -70,6 +77,8 @@ export default function CombatTab({
         onStartTurn={onStartTurn}
         onRollInitiative={onRollInitiative}
         isMyTurn={character.isMyTurn}
+        inCombat={character.inCombat}
+        onToggleCombat={onToggleCombat}
       />
 
       {/* HP and MP */}
@@ -88,8 +97,10 @@ export default function CombatTab({
         />
       </div>
 
-      {/* Action Indicator */}
-      <ActionIndicator availableActions={character.availableActions} />
+      {/* Action Indicator - Only show in combat */}
+      {character.inCombat && (
+        <ActionIndicator availableActions={character.availableActions} />
+      )}
 
       {/* Defense and Combat Skills */}
       <div className="grid grid-cols-2 gap-2 mb-2">
@@ -117,8 +128,10 @@ export default function CombatTab({
       <FavoritesSection
         actions={character.actionsList}
         weapons={character.weapons}
+        abilities={character.abilities}
         onUseAction={onUseAction}
         onUseWeapon={onUseWeapon}
+        onUseAbility={onUseAbility}
         onRollDamage={onRollDamage}
         onReorderFavorites={onReorderFavorites}
       />
@@ -129,6 +142,15 @@ export default function CombatTab({
         onUseAction={onUseAction}
         onToggleFavorite={onToggleFavoriteAction}
       />
+
+      {/* Abilities Collapsible */}
+      {character.abilities && onUseAbility && onToggleFavoriteAbility && (
+        <AbilitiesCollapsible
+          abilities={character.abilities}
+          onUseAbility={onUseAbility}
+          onToggleFavorite={onToggleFavoriteAbility}
+        />
+      )}
 
       {/* Manage Weapons Button */}
       <button
