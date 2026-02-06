@@ -60,18 +60,19 @@ type AbilitiesTabProps = {
   onHealthChange?: (delta: number) => void
 }
 
-function Collapsible({ title, count, isOpen, onToggle, children }: {
+function Collapsible({ title, count, isOpen, onToggle, children, className = '' }: {
   title: string
   count: number
   isOpen: boolean
   onToggle: () => void
   children: React.ReactNode
+  className?: string
 }) {
   return (
-    <div className="bg-card border border-stroke rounded-lg overflow-hidden">
+    <div className={`bg-card border border-stroke rounded-lg overflow-hidden flex flex-col ${isOpen ? 'flex-1' : ''} ${className}`}>
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 hover:bg-card-muted transition-colors"
+        className="w-full flex items-center justify-between p-3 hover:bg-card-muted transition-colors flex-shrink-0"
       >
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{title}</span>
@@ -79,7 +80,7 @@ function Collapsible({ title, count, isOpen, onToggle, children }: {
         </div>
         <div className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</div>
       </button>
-      {isOpen && <div className="p-3 space-y-2">{children}</div>}
+      {isOpen && <div className="p-3 space-y-2 overflow-y-auto flex-1">{children}</div>}
     </div>
   )
 }
@@ -406,11 +407,7 @@ export default function AbilitiesTab({
   onManaChange,
   onHealthChange,
 }: AbilitiesTabProps) {
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    active: true,
-    passive: true,
-    spells: true,
-  })
+  const [openSection, setOpenSection] = useState<string | null>('active')
   const [castingSpell, setCastingSpell] = useState<Spell | null>(null)
   const [usingAbility, setUsingAbility] = useState<Ability | null>(null)
 
@@ -424,7 +421,7 @@ export default function AbilitiesTab({
   })
 
   const toggleSection = (section: string) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
+    setOpenSection(prev => prev === section ? null : section)
   }
 
   const activeAbilities = character.abilities?.filter(a => a.type === 'active') || []
@@ -488,12 +485,12 @@ export default function AbilitiesTab({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3" style={{ height: '-webkit-fill-available' }}>
       {activeAbilities.length > 0 && (
         <Collapsible
           title="Habilidades Ativas"
           count={activeAbilities.length}
-          isOpen={openSections.active}
+          isOpen={openSection === 'active'}
           onToggle={() => toggleSection('active')}
         >
           {activeAbilities.map(ability => (
@@ -512,7 +509,7 @@ export default function AbilitiesTab({
         <Collapsible
           title="Habilidades Passivas"
           count={passiveAbilities.length}
-          isOpen={openSections.passive}
+          isOpen={openSection === 'passive'}
           onToggle={() => toggleSection('passive')}
         >
           {passiveAbilities.map(ability => (
@@ -522,10 +519,10 @@ export default function AbilitiesTab({
       )}
 
       {allSpells.length > 0 && (
-        <div className="bg-card border border-stroke rounded-lg overflow-hidden">
+        <div className={`bg-card border border-stroke rounded-lg overflow-hidden flex flex-col ${openSection === 'spells' ? 'flex-1' : ''}`}>
           <button
             onClick={() => toggleSection('spells')}
-            className="w-full flex items-center justify-between p-3 hover:bg-card-muted transition-colors"
+            className="w-full flex items-center justify-between p-3 hover:bg-card-muted transition-colors flex-shrink-0"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Magias</span>
@@ -534,11 +531,11 @@ export default function AbilitiesTab({
                 {hasActiveFilters && ` / ${allSpells.length}`}
               </span>
             </div>
-            <div className={`transition-transform ${openSections.spells ? 'rotate-180' : ''}`}>▼</div>
+            <div className={`transition-transform ${openSection === 'spells' ? 'rotate-180' : ''}`}>▼</div>
           </button>
 
-          {openSections.spells && (
-            <div className="p-3 space-y-3">
+          {openSection === 'spells' && (
+            <div className="p-3 space-y-3 overflow-y-auto flex-1 flex flex-col">
               {/* Filters and Sort */}
               <div className="flex flex-wrap gap-2 pb-2 border-b border-stroke">
                 {/* Sort dropdown */}
@@ -661,7 +658,7 @@ export default function AbilitiesTab({
               </div>
 
               {/* Spell list */}
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-y-auto flex-1">
                 {filteredAndSortedSpells.length > 0 ? (
                   filteredAndSortedSpells.map(spell => (
                     <SpellCard
