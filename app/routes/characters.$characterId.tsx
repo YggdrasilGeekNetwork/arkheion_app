@@ -184,7 +184,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
         critMultiplier: 'x2',
         actionType: 'standard',
         isFavorite: true,
-        favoriteOrder: 0
+        favoriteOrder: 0,
+        equipmentId: 'eq-1' // Linked to equipped Espada Longa +1
       },
       {
         id: 'weapon-2',
@@ -197,7 +198,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
         critMultiplier: 'x3',
         range: '30m',
         actionType: 'standard',
-        isFavorite: false
+        isFavorite: false,
+        equipmentId: 'bp-14' // Linked to Arco Longo Composto in backpack
       },
       {
         id: 'weapon-3',
@@ -210,7 +212,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
         critMultiplier: 'x2',
         actionType: 'standard',
         isFavorite: true,
-        favoriteOrder: 1
+        favoriteOrder: 1,
+        equipmentId: 'eq-4' // Linked to Adaga de Prata in quickDraw2
       },
       {
         id: 'weapon-4',
@@ -381,6 +384,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
       { id: 'bp-10', name: 'Poção de Cura', quantity: 3, weight: 0.5, spaces: 0.5, price: 50, category: 'alchemical', description: 'Poção de cura básica feita por um boticário de confiança', effects: [{ id: 'eff-cure', name: 'Cura Básica', description: 'Restaura 2d8+2 PV', type: 'consumable', activeAbility: { name: 'Beber Poção', description: 'Restaura pontos de vida', actionType: 'standard' } }] },
       { id: 'bp-11', name: 'Elixir de Força', quantity: 2, weight: 0.3, spaces: 0.5, price: 80, category: 'alchemical', description: 'Elixir alquímico que aprimoa a força física do portador', effects: [{ id: 'eff-str', name: 'Força Aprimorada', description: '+2 no modificador de FOR', type: 'consumable', passiveModifiers: { attribute: { label: 'FOR', bonus: 2 } }, activeAbility: { name: 'Ingerir Elixir', description: 'Aumenta FOR em +2', actionType: 'free' } }] },
       { id: 'bp-12', name: 'Bomba de Fumaça', quantity: 2, weight: 0.3, spaces: 0.5, price: 25, category: 'alchemical', description: 'Dispositivo explosivo que libera uma densa nuvem de fumaça', effects: [{ id: 'eff-smoke', name: 'Nuvem de Fumaça', description: 'Cria nuvem de fumaça em raio de 3m por 1 rodada', type: 'consumable', activeAbility: { name: 'Lançar Bomba', description: 'Cria nuvem de fumaça', actionType: 'standard' } }] },
+      { id: 'bp-13', name: 'Montante', quantity: 1, weight: 4, spaces: 2, price: 50, category: 'weapon', description: 'Espada gigante de duas mãos. Dano 2d6+FOR, crítico 19-20/x2.', twoHanded: true },
+      { id: 'bp-14', name: 'Arco Longo Composto', quantity: 1, weight: 1.5, spaces: 1, price: 100, category: 'weapon', description: 'Arco longo reforçado que requer duas mãos para usar. Dano 1d8+FOR, crítico x3, alcance 30m.', twoHanded: true },
+      { id: 'bp-15', name: 'Espada Bastarda', quantity: 1, weight: 3, spaces: 1, price: 35, category: 'weapon', description: 'Espada versátil que pode ser usada com uma ou duas mãos. Uma mão: 1d10+FOR. Duas mãos: 1d10+FOR×1.5 (+2 dano). Crítico 19-20/x2.', versatile: true },
     ],
 
     currencies: {

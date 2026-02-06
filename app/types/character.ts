@@ -67,6 +67,8 @@ export type ItemEffect = {
   }
 }
 
+export type EquipSlot = 'rightHand' | 'leftHand' | 'quickDraw1' | 'quickDraw2' | 'slot1' | 'slot2' | 'slot3' | 'slot4'
+
 export type EquipmentItem = {
   id: string
   name: string
@@ -75,8 +77,17 @@ export type EquipmentItem = {
   weight?: number // Weight per unit in kg
   spaces?: number // Spaces occupied (for carry capacity)
   price?: number // Price in TP (Tibares de Prata)
-  category?: 'weapon' | 'armor' | 'equipment' | 'alchemical' | 'tool' | 'clothing' | 'esoteric' | 'food' | 'other'
+  category?: 'weapon' | 'armor' | 'shield' | 'equipment' | 'alchemical' | 'tool' | 'clothing' | 'esoteric' | 'food' | 'other'
   effects?: ItemEffect[] // Item effects (passive or active)
+  // Slot restrictions - if defined, item can only be equipped in these slots
+  // If undefined, uses default rules based on category
+  allowedSlots?: EquipSlot[]
+  // If true, requires both hands (takes rightHand + leftHand)
+  twoHanded?: boolean
+  // If true, weapon can be used one-handed or two-handed (player chooses at equip)
+  versatile?: boolean
+  // When equipped, tracks if a versatile weapon is being used two-handed
+  usingTwoHanded?: boolean
 }
 
 export type ActiveEffect = {
@@ -252,6 +263,7 @@ export type WeaponAttack = {
   actionType: 'standard' | 'full'
   isFavorite?: boolean
   favoriteOrder?: number // Ordem de exibição nos favoritos
+  equipmentId?: string // Link to EquipmentItem - weapon is greyed out if not equipped
 }
 
 export type CharacterSummary = {

@@ -156,16 +156,24 @@ export default function EquippedItemsSummaryCard({
         </div>
 
         <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
-          <div className="grid grid-cols-2 gap-2 md:gap-3">
+          {/* Hands - merged for two-handed weapons or versatile used two-handed */}
+          {(equippedItems.rightHand?.twoHanded || equippedItems.rightHand?.usingTwoHanded) ? (
             <div>
-              <div className="text-[10px] md:text-xs text-muted mb-0.5">Mão Direita</div>
+              <div className="text-[10px] md:text-xs text-muted mb-0.5">Duas Mãos</div>
               {renderItem(equippedItems.rightHand, 'rightHand', 'Vazio')}
             </div>
-            <div>
-              <div className="text-[10px] md:text-xs text-muted mb-0.5">Mão Esquerda</div>
-              {renderItem(equippedItems.leftHand, 'leftHand', 'Vazio')}
+          ) : (
+            <div className="grid grid-cols-2 gap-2 md:gap-3">
+              <div>
+                <div className="text-[10px] md:text-xs text-muted mb-0.5">Mão Direita</div>
+                {renderItem(equippedItems.rightHand, 'rightHand', 'Vazio')}
+              </div>
+              <div>
+                <div className="text-[10px] md:text-xs text-muted mb-0.5">Mão Esquerda</div>
+                {renderItem(equippedItems.leftHand, 'leftHand', 'Vazio')}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2 md:gap-3">
             <div>
@@ -282,8 +290,8 @@ export default function EquippedItemsSummaryCard({
             <div>
               <div className="text-sm font-semibold mb-1.5">Trocar com</div>
               <div className="space-y-1.5">
-                {/* Swap hands */}
-                {(selectedSlot === 'rightHand' || selectedSlot === 'leftHand') && (
+                {/* Swap hands - not available for two-handed weapons */}
+                {(selectedSlot === 'rightHand' || selectedSlot === 'leftHand') && !selectedItem?.twoHanded && (
                   <button
                     onClick={() => handleSwap(
                       selectedSlot === 'rightHand' ? 'leftHand' : 'rightHand',

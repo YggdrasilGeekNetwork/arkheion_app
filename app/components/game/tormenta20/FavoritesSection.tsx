@@ -11,7 +11,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { CombatAction, WeaponAttack, Ability } from '~/types/character'
+import type { CombatAction, WeaponAttack, Ability, EquippedItems } from '~/types/character'
 import ActionItem from './ActionItem'
 import WeaponItem from './WeaponItem'
 import AbilityItem from './AbilityItem'
@@ -20,6 +20,7 @@ type FavoritesSectionProps = {
   actions: CombatAction[]
   weapons: WeaponAttack[]
   abilities?: Ability[]
+  equippedItems?: EquippedItems
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
   onUseAbility?: (ability: Ability) => void
@@ -34,13 +35,26 @@ type FavoriteItem = {
   data: WeaponAttack | CombatAction | Ability
 }
 
+// Check if a weapon's equipment is equipped
+function isWeaponEquipped(weapon: WeaponAttack, equippedItems?: EquippedItems): boolean {
+  if (!weapon.equipmentId || !equippedItems) return true // No equipment link means always available
+  // Check if the equipment is in any hand slot
+  return [
+    equippedItems.rightHand,
+    equippedItems.leftHand,
+    equippedItems.quickDraw1,
+    equippedItems.quickDraw2,
+  ].some(item => item?.id === weapon.equipmentId)
+}
+
 // Sortable Item Component
-function SortableItem({ item, onUseAction, onUseWeapon, onUseAbility, onRollDamage }: {
+function SortableItem({ item, onUseAction, onUseWeapon, onUseAbility, onRollDamage, isDisabled }: {
   item: FavoriteItem
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
   onUseAbility?: (ability: Ability) => void
   onRollDamage: (weapon: WeaponAttack) => void
+  isDisabled?: boolean
 }) {
   const {
     attributes,
@@ -78,6 +92,7 @@ function SortableItem({ item, onUseAction, onUseWeapon, onUseAbility, onRollDama
             onUse={onUseWeapon}
             onRollDamage={onRollDamage}
             compact={true}
+            disabled={isDisabled}
           />
         ) : item.type === 'ability' ? (
           <AbilityItem
@@ -101,6 +116,7 @@ export default function FavoritesSection({
   actions,
   weapons,
   abilities = [],
+  equippedItems,
   onUseAction,
   onUseWeapon,
   onUseAbility,
@@ -227,6 +243,7 @@ export default function FavoritesSection({
                 onUseWeapon={onUseWeapon}
                 onUseAbility={onUseAbility}
                 onRollDamage={onRollDamage}
+                isDisabled={item.type === 'weapon' && !isWeaponEquipped(item.data as WeaponAttack, equippedItems)}
               />
             ))}
           </div>
@@ -242,6 +259,7 @@ export default function FavoritesSection({
                 onUse={onUseWeapon}
                 onRollDamage={onRollDamage}
                 compact={true}
+                disabled={!isWeaponEquipped(activeItem.data as WeaponAttack, equippedItems)}
               />
             ) : activeItem.type === 'ability' ? (
               <AbilityItem

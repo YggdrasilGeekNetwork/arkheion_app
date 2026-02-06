@@ -80,7 +80,7 @@ function Collapsible({ title, count, isOpen, onToggle, children, className = '' 
         </div>
         <div className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</div>
       </button>
-      {isOpen && <div className="p-3 space-y-2 overflow-y-auto flex-1">{children}</div>}
+      {isOpen && <div className="p-3 columns-2 gap-2 overflow-y-auto flex-1">{children}</div>}
     </div>
   )
 }
@@ -99,41 +99,45 @@ function AbilityCard({
   const isActive = ability.type === 'active'
 
   return (
-    <div className="text-xs p-2.5 bg-card-muted rounded">
-      <div className="flex items-center justify-between mb-1">
+    <div className="text-xs p-2.5 bg-card-muted rounded break-inside-avoid mb-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
         <span className="font-semibold">{ability.name}</span>
-        <div className="flex items-center gap-1.5">
-          {ability.actionType && (
-            <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
-              {ACTION_TYPE_LABELS[ability.actionType]}
-            </span>
-          )}
-          {ability.cost?.pm && (
-            <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">
-              {ability.cost.pm} PM
-            </span>
-          )}
-          {showFavorite && onToggleFavorite && (
-            <button
-              onClick={onToggleFavorite}
-              className={`text-[10px] px-1.5 py-1 rounded transition-colors ${
-                ability.isFavorite
-                  ? 'bg-yellow-500/20 text-yellow-400'
-                  : 'bg-card text-muted hover:text-yellow-400'
-              }`}
-              title={ability.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-            >
-              {ability.isFavorite ? '★' : '☆'}
-            </button>
-          )}
-          {isActive && onUse && (
-            <button
-              onClick={() => onUse(ability)}
-              className="text-[10px] px-2 py-1 bg-accent/20 text-accent rounded hover:bg-accent/30 transition-colors font-semibold"
-            >
-              Usar
-            </button>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-1.5 flex-grow min-w-[100px]">
+          <div className="flex items-center gap-1.5">
+            {ability.actionType && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded whitespace-nowrap">
+                {ACTION_TYPE_LABELS[ability.actionType]}
+              </span>
+            )}
+            {ability.cost?.pm && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded whitespace-nowrap">
+                {ability.cost.pm} PM
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {showFavorite && onToggleFavorite && (
+              <button
+                onClick={onToggleFavorite}
+                className={`text-[10px] px-1.5 py-1 rounded transition-colors ${
+                  ability.isFavorite
+                    ? 'bg-yellow-500/20 text-yellow-400'
+                    : 'bg-card text-muted hover:text-yellow-400'
+                }`}
+                title={ability.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+              >
+                {ability.isFavorite ? '★' : '☆'}
+              </button>
+            )}
+            {isActive && onUse && (
+              <button
+                onClick={() => onUse(ability)}
+                className="text-[10px] px-2 py-1 bg-accent/20 text-accent rounded hover:bg-accent/30 transition-colors font-semibold whitespace-nowrap"
+              >
+                Usar
+              </button>
+            )}
+          </div>
         </div>
       </div>
       <div className="text-muted">{ability.description}</div>
@@ -163,37 +167,40 @@ function SpellCard({
   const basePmCost = spell.circle * 2 - 1 // 1º círculo = 1 PM, 2º = 3 PM, etc.
 
   return (
-    <div className="text-xs p-2.5 bg-card-muted rounded">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <span className="font-semibold">{spell.name}</span>
-          <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">
-            {spell.circle}º círculo
-          </span>
-          <span className="text-[10px] px-1.5 py-0.5 bg-card rounded capitalize">
-            {spell.type}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {showFavorite && onToggleFavorite && (
+    <div className="text-xs p-2.5 bg-card-muted rounded break-inside-avoid mb-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+        <span className="font-semibold">{spell.name}</span>
+        <div className="flex flex-wrap items-center justify-between gap-1.5 flex-grow min-w-[100px]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded whitespace-nowrap">
+              {spell.circle}º
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 bg-card rounded capitalize whitespace-nowrap">
+              {spell.type}
+            </span>
+            <span className="text-[10px] text-purple-400 whitespace-nowrap">{basePmCost} PM</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {showFavorite && onToggleFavorite && (
+              <button
+                onClick={onToggleFavorite}
+                className={`text-[10px] px-1.5 py-1 rounded transition-colors ${
+                  spell.isFavorite
+                    ? 'bg-yellow-500/20 text-yellow-400'
+                    : 'bg-card text-muted hover:text-yellow-400'
+                }`}
+                title={spell.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+              >
+                {spell.isFavorite ? '★' : '☆'}
+              </button>
+            )}
             <button
-              onClick={onToggleFavorite}
-              className={`text-[10px] px-1.5 py-1 rounded transition-colors ${
-                spell.isFavorite
-                  ? 'bg-yellow-500/20 text-yellow-400'
-                  : 'bg-card text-muted hover:text-yellow-400'
-              }`}
-              title={spell.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+              onClick={() => onCast(spell)}
+              className="text-[10px] px-2 py-1 bg-accent/20 text-accent rounded hover:bg-accent/30 transition-colors font-semibold whitespace-nowrap"
             >
-              {spell.isFavorite ? '★' : '☆'}
+              Lançar
             </button>
-          )}
-          <button
-            onClick={() => onCast(spell)}
-            className="text-[10px] px-2 py-1 bg-accent/20 text-accent rounded hover:bg-accent/30 transition-colors font-semibold"
-          >
-            Lançar
-          </button>
+          </div>
         </div>
       </div>
       <div className="text-muted mb-1.5">{spell.description}</div>
@@ -202,7 +209,6 @@ function SpellCard({
         <span>Execução: {spell.execution}</span>
         <span>Alcance: {spell.range}</span>
         <span>Duração: {spell.duration}</span>
-        <span className="text-purple-400">{basePmCost} PM</span>
         {spell.resistance && <span>Resistência: {spell.resistance}</span>}
       </div>
     </div>
@@ -537,7 +543,7 @@ export default function AbilitiesTab({
           {openSection === 'spells' && (
             <div className="p-3 space-y-3 overflow-y-auto flex-1 flex flex-col">
               {/* Filters and Sort */}
-              <div className="flex flex-wrap gap-2 pb-2 border-b border-stroke">
+              <div className="flex flex-wrap gap-2 pb-2 border-b border-stroke flex-shrink-0">
                 {/* Sort dropdown */}
                 <select
                   value={spellSort}
@@ -658,7 +664,7 @@ export default function AbilitiesTab({
               </div>
 
               {/* Spell list */}
-              <div className="space-y-2 overflow-y-auto flex-1">
+              <div className="columns-2 gap-2 overflow-y-auto flex-1">
                 {filteredAndSortedSpells.length > 0 ? (
                   filteredAndSortedSpells.map(spell => (
                     <SpellCard

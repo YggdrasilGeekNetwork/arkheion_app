@@ -128,6 +128,7 @@ export default function CombatTab({
         actions={character.actionsList}
         weapons={character.weapons}
         abilities={character.abilities}
+        equippedItems={character.equippedItems}
         onUseAction={onUseAction}
         onUseWeapon={onUseWeapon}
         onUseAbility={onUseAbility}
