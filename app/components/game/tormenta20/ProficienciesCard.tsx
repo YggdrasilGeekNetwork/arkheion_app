@@ -29,19 +29,19 @@ const ProficienciesCard = ({ proficiencies, onProficienciesChange }: Proficienci
   return (
     <>
       <Card>
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-sm font-semibold">Proficiências</div>
+        <div className="flex items-center justify-between mb-1 md:mb-1.5">
+          <div className="text-sm md:text-base font-semibold">Proficiências</div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="text-xs px-2 py-0.5 bg-btn-bg border border-stroke rounded hover:bg-card-muted transition-colors"
+            className="text-xs md:text-sm px-2 py-0.5 bg-btn-bg border border-stroke rounded hover:bg-card-muted transition-colors"
           >
             Ver/Editar
           </button>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-1 md:space-y-1.5">
           {visibleProficiencies.map((prof, index) => (
-            <div key={index} className="flex items-start text-sm group relative">
+            <div key={index} className="flex items-start text-sm md:text-base group relative">
               <span className="text-muted mr-1">•</span>
               <span className="text-muted flex-1">
                 {prof.name} {prof.tooltip && <span className="opacity-50">?</span>}

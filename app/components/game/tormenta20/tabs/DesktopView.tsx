@@ -131,10 +131,10 @@ export default function DesktopView({
           {/* Attributes Section */}
           <div className="grid grid-cols-6 gap-1.5 mb-2">
             {character.attributes.map((attr) => (
-              <div key={attr.label} className="flex flex-col items-center justify-center bg-card border border-stroke rounded-lg p-1.5">
-                <div className="text-xs font-semibold text-muted">{attr.label}</div>
+              <div key={attr.label} className="flex flex-col items-center justify-center bg-card border border-stroke rounded-lg p-2">
+                <div className="text-sm font-semibold text-muted">{attr.label}</div>
                 <Rollable label={attr.label} modifier={attr.modifier}>
-                  <div className="text-base font-bold">{attr.modifier >= 0 ? '+' : ''}{attr.modifier}</div>
+                  <div className="text-lg font-bold">{attr.modifier >= 0 ? '+' : ''}{attr.modifier}</div>
                 </Rollable>
               </div>
             ))}
@@ -182,37 +182,21 @@ export default function DesktopView({
           <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
 
           {/* Misc Info Section */}
-          <div className="grid grid-cols-3 gap-1.5 mb-2">
-            <DefenseCard
-              attributes={character.attributes}
-              armor={2}
-              shield={2}
-              others={3}
-              othersDetails={[
-                { label: 'Anel de Proteção', value: 1 },
-                { label: 'Abrigo', value: 2 },
-              ]}
-            />
-
-            <div className="flex flex-col gap-1.5">
-              <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help flex-1">
-                <div className="bg-card border border-stroke rounded-lg p-1.5 h-full flex items-center">
-                  <div className="flex items-center justify-between text-xs w-full">
-                    <span className="font-semibold text-muted">Tamanho</span>
-                    <span className="font-bold">Médio</span>
-                  </div>
-                </div>
-              </Tooltip>
-
-              <div className="bg-card border border-stroke rounded-lg p-1.5 flex-1 flex items-center">
-                <div className="flex items-center justify-between text-xs w-full">
-                  <span className="font-semibold text-muted">Desloc.</span>
-                  <span className="font-bold">9m / 6q</span>
-                </div>
-              </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-1.5 mb-2">
+            <div className="min-w-0 overflow-hidden">
+              <DefenseCard
+                attributes={character.attributes}
+                armor={2}
+                shield={2}
+                others={3}
+                othersDetails={[
+                  { label: 'Anel de Proteção', value: 1 },
+                  { label: 'Abrigo', value: 2 },
+                ]}
+              />
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 min-w-0 order-2 lg:order-3">
               <SpellDCCard
                 attributes={character.attributes}
                 hasSpells={true}
@@ -225,6 +209,24 @@ export default function DesktopView({
                 onSwitchToCombat={onSwitchToCombat}
                 onRollInitiative={onRollInitiative}
               />
+            </div>
+
+            <div className="grid grid-cols-2 lg:flex lg:flex-col gap-1.5 min-w-0 order-3 lg:order-2 col-span-2 lg:col-span-1">
+              <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help lg:flex-1">
+                <div className="bg-card border border-stroke rounded-lg p-2 h-full flex items-center">
+                  <div className="flex items-center justify-between text-sm w-full">
+                    <span className="font-semibold text-muted truncate">Tamanho</span>
+                    <span className="font-bold">Médio</span>
+                  </div>
+                </div>
+              </Tooltip>
+
+              <div className="bg-card border border-stroke rounded-lg p-2 lg:flex-1 flex items-center">
+                <div className="flex items-center justify-between text-sm w-full">
+                  <span className="font-semibold text-muted truncate">Desloc.</span>
+                  <span className="font-bold whitespace-nowrap">9m / 6q</span>
+                </div>
+              </div>
             </div>
           </div>
 

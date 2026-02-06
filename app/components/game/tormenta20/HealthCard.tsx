@@ -25,15 +25,15 @@ const HealthCard = ({ current, max, onChange, onBleedingRoll, onConRoll }: Healt
   return (
     <div>
       {/* Title and buttons row */}
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <div className="text-xs md:text-sm font-semibold">PV</div>
-        <div className="flex gap-0.5 md:gap-1 flex-1">
-          <Button onClick={() => handleChange(-10)} className="hidden md:flex flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">-10</Button>
-          <Button onClick={() => handleChange(-5)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">-5</Button>
-          <Button onClick={() => handleChange(-1)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">-1</Button>
-          <Button onClick={() => handleChange(1)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">+1</Button>
-          <Button onClick={() => handleChange(5)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">+5</Button>
-          <Button onClick={() => handleChange(10)} className="hidden md:flex flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">+10</Button>
+      <div className="flex items-center gap-1 mb-0.5 min-w-0">
+        <div className="text-xs md:text-sm font-semibold flex-shrink-0">PV</div>
+        <div className="flex gap-0.5 flex-1 min-w-0 overflow-hidden">
+          <Button onClick={() => handleChange(-10)} className="hidden lg:flex flex-1 min-w-0 py-0.5 lg:py-1.5 text-xs lg:text-sm">-10</Button>
+          <Button onClick={() => handleChange(-5)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">-5</Button>
+          <Button onClick={() => handleChange(-1)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">-1</Button>
+          <Button onClick={() => handleChange(1)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">+1</Button>
+          <Button onClick={() => handleChange(5)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">+5</Button>
+          <Button onClick={() => handleChange(10)} className="hidden lg:flex flex-1 min-w-0 py-0.5 lg:py-1.5 text-xs lg:text-sm">+10</Button>
         </div>
       </div>
 
@@ -46,23 +46,23 @@ const HealthCard = ({ current, max, onChange, onBleedingRoll, onConRoll }: Healt
         />
 
         {/* Value */}
-        <div className="relative p-1 text-center">
+        <div className="relative p-1 md:p-1.5 text-center">
           {isDead ? (
-            <div className="text-lg font-bold text-red-600">MORTO</div>
+            <div className="text-lg md:text-xl font-bold text-red-600">MORTO</div>
           ) : isBleeding ? (
             <div className="flex items-center justify-between gap-1">
-              <Button onClick={onBleedingRoll} className="px-1 py-0.5 text-[10px] bg-red-600 text-white">
+              <Button onClick={onBleedingRoll} className="px-1 py-0.5 text-[10px] md:text-xs bg-red-600 text-white">
                 Sangrar
               </Button>
-              <div className="text-sm font-bold text-red-600">
+              <div className="text-sm md:text-base font-bold text-red-600">
                 {current - deathThreshold} para morrer
               </div>
-              <Button onClick={onConRoll} className="px-1 py-0.5 text-[10px]">
+              <Button onClick={onConRoll} className="px-1 py-0.5 text-[10px] md:text-xs">
                 CON
               </Button>
             </div>
           ) : (
-            <div className="text-lg font-bold">
+            <div className="text-lg md:text-xl font-bold">
               {hasExtra ? (
                 <>
                   {displayCurrent} / {max} <span className="text-green-500">+{extra}</span>

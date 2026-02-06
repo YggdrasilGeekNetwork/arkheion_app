@@ -18,13 +18,13 @@ const SpellDCCard = ({ attributes, hasSpells = true, proficiencyBonus = 2 }: Spe
 
   return (
     <div className="relative group bg-card border border-stroke rounded-lg p-2">
-      <div className="flex items-center justify-between text-xs min-h-[20px]">
+      <div className="flex items-center justify-between text-xs md:text-sm min-h-[20px] md:min-h-[24px]">
         <span className="font-semibold text-muted whitespace-nowrap">{title} <span className="opacity-50">?</span></span>
         <div className="flex items-center gap-1.5">
           <select
             value={selectedAttr}
             onChange={(e) => setSelectedAttr(e.target.value)}
-            className="px-1.5 py-0.5 text-xs bg-btn-bg border border-stroke rounded leading-none"
+            className="px-1.5 py-0.5 text-xs md:text-sm bg-btn-bg border border-stroke rounded leading-none w-14 md:w-16"
           >
             {attributes.map((attr) => (
               <option key={attr.label} value={attr.label}>
@@ -32,8 +32,7 @@ const SpellDCCard = ({ attributes, hasSpells = true, proficiencyBonus = 2 }: Spe
               </option>
             ))}
           </select>
-          <span>|</span>
-          <span className="font-bold">{totalDC}</span>
+          <span className="font-bold text-base md:text-lg">{totalDC}</span>
         </div>
       </div>
 

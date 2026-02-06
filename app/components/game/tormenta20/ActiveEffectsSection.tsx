@@ -50,43 +50,43 @@ export default function ActiveEffectsSection({
     <>
       <Card>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold">Efeitos Ativos</h3>
+          <h3 className="text-sm md:text-base font-bold">Efeitos Ativos</h3>
           {activeEffects.length > 0 && (
             <button
               onClick={() => setModalOpen(true)}
-              className="text-xs px-2 py-1 bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+              className="text-xs md:text-sm px-2 py-1 bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
             >
               Encerrar
             </button>
           )}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 md:space-y-2">
           {!hasAnyEffects && (
-            <div className="text-xs text-muted text-center py-2 italic">
+            <div className="text-xs md:text-sm text-muted text-center py-2 italic">
               Nenhum efeito ativo
             </div>
           )}
           {passiveEffects.map((pe, idx) => (
-            <div key={`passive-${idx}`} className="flex items-start gap-2 text-xs p-1.5 bg-card-muted rounded">
-              <span className="text-[10px] px-1 py-0.5 bg-accent/20 text-accent rounded flex-shrink-0 whitespace-nowrap">Passivo</span>
+            <div key={`passive-${idx}`} className="flex items-start gap-2 text-xs md:text-sm p-1.5 md:p-2 bg-card-muted rounded">
+              <span className="text-[10px] md:text-xs px-1 py-0.5 bg-accent/20 text-accent rounded flex-shrink-0 whitespace-nowrap">Passivo</span>
               <div className="min-w-0">
                 <div className="font-semibold truncate">{pe.effect.name}</div>
-                <div className="text-[10px] text-muted">{pe.effect.description} • {pe.source}</div>
+                <div className="text-[10px] md:text-xs text-muted">{pe.effect.description} • {pe.source}</div>
               </div>
             </div>
           ))}
 
           {activeEffects.map((effect) => (
-            <div key={effect.id} className="flex items-start gap-2 text-xs p-1.5 bg-card-muted rounded">
-              <span className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
+            <div key={effect.id} className="flex items-start gap-2 text-xs md:text-sm p-1.5 md:p-2 bg-card-muted rounded">
+              <span className={`text-[10px] md:text-xs px-1 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
                 effect.type === 'consumable' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'
               }`}>
                 {effect.type === 'consumable' ? 'Consumível' : 'Ativo'}
               </span>
               <div className="min-w-0">
                 <div className="font-semibold truncate">{effect.name}</div>
-                <div className="text-[10px] text-muted">
+                <div className="text-[10px] md:text-xs text-muted">
                   {effect.description} • {effect.source} • {effect.duration || 'Permanente'}
                 </div>
               </div>

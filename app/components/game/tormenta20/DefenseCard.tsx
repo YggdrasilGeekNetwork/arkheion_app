@@ -20,13 +20,13 @@ const DefenseCard = ({ attributes, armor = 0, shield = 0, others = 0, othersDeta
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-0.5">
+      <div className="flex items-center justify-between mb-0.5 md:mb-1">
         <div className="flex items-center gap-1.5">
-          <div className="text-sm font-semibold">Defesa</div>
+          <div className="text-sm md:text-base font-semibold">Defesa</div>
           <select
             value={selectedAttr}
             onChange={(e) => setSelectedAttr(e.target.value)}
-            className="w-20 px-1 py-0.5 text-xs bg-btn-bg border border-stroke rounded"
+            className="w-15 px-1 py-0.5 text-xs md:text-sm bg-btn-bg border border-stroke rounded"
           >
             {attributes.map((attr) => (
               <option key={attr.label} value={attr.label}>
@@ -35,11 +35,11 @@ const DefenseCard = ({ attributes, armor = 0, shield = 0, others = 0, othersDeta
             ))}
           </select>
         </div>
-        <div className="text-lg font-bold">{totalDefense}</div>
+        <div className="text-lg md:text-xl font-bold">{totalDefense}</div>
       </div>
 
       {/* Breakdown */}
-      <div className="text-[10px] text-muted space-y-0">
+      <div className="text-[10px] md:text-xs text-muted space-y-0">
         < >
           <span>10 + {selectedAttr}({attrModifier >= 0 ? '+' : ''}{attrModifier})</span>
         </>

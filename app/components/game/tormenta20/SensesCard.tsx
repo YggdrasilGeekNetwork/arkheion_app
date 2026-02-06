@@ -30,19 +30,19 @@ const SensesCard = ({ senses, onSensesChange }: SensesCardProps) => {
   return (
     <>
       <Card>
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-sm font-semibold">Sentidos</div>
+        <div className="flex items-center justify-between mb-1 md:mb-1.5">
+          <div className="text-sm md:text-base font-semibold">Sentidos</div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="text-xs px-2 py-0.5 bg-btn-bg border border-stroke rounded hover:bg-card-muted transition-colors"
+            className="text-xs md:text-sm px-2 py-0.5 bg-btn-bg border border-stroke rounded hover:bg-card-muted transition-colors"
           >
             Ver/Editar
           </button>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-1 md:space-y-1.5">
           {visibleSenses.map((sense, index) => (
-            <div key={index} className="flex justify-between text-sm group relative">
+            <div key={index} className="flex justify-between text-sm md:text-base group relative">
               <span className="text-muted">
                 {sense.name} {sense.tooltip && <span className="opacity-50">?</span>}
               </span>

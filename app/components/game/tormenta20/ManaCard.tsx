@@ -19,15 +19,15 @@ const ManaCard = ({ current, max, onChange }: ManaCardProps) => {
   return (
     <div>
       {/* Title and buttons row */}
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <div className="text-xs md:text-sm font-semibold">PM</div>
-        <div className="flex gap-0.5 md:gap-1 flex-1">
-          <Button onClick={() => handleChange(-10)} className="hidden md:flex flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">-10</Button>
-          <Button onClick={() => handleChange(-5)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">-5</Button>
-          <Button onClick={() => handleChange(-1)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">-1</Button>
-          <Button onClick={() => handleChange(1)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">+1</Button>
-          <Button onClick={() => handleChange(5)} className="flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">+5</Button>
-          <Button onClick={() => handleChange(10)} className="hidden md:flex flex-1 py-0.5 md:py-1.5 text-xs md:text-sm">+10</Button>
+      <div className="flex items-center gap-1 mb-0.5 min-w-0">
+        <div className="text-xs md:text-sm font-semibold flex-shrink-0">PM</div>
+        <div className="flex gap-0.5 flex-1 min-w-0 overflow-hidden">
+          <Button onClick={() => handleChange(-10)} className="hidden lg:flex flex-1 min-w-0 py-0.5 lg:py-1.5 text-xs lg:text-sm">-10</Button>
+          <Button onClick={() => handleChange(-5)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">-5</Button>
+          <Button onClick={() => handleChange(-1)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">-1</Button>
+          <Button onClick={() => handleChange(1)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">+1</Button>
+          <Button onClick={() => handleChange(5)} className="flex-1 min-w-0 py-0.5 md:py-1 lg:py-1.5 text-xs md:text-sm">+5</Button>
+          <Button onClick={() => handleChange(10)} className="hidden lg:flex flex-1 min-w-0 py-0.5 lg:py-1.5 text-xs lg:text-sm">+10</Button>
         </div>
       </div>
 
@@ -40,8 +40,8 @@ const ManaCard = ({ current, max, onChange }: ManaCardProps) => {
         />
 
         {/* Value */}
-        <div className="relative p-1 text-center">
-          <div className="text-lg font-bold">
+        <div className="relative p-1 md:p-1.5 text-center">
+          <div className="text-lg md:text-xl font-bold">
             {hasExtra ? (
               <>
                 {displayCurrent} / {max} <span className="text-green-500">+{extra}</span>

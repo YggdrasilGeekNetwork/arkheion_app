@@ -105,32 +105,32 @@ export default function SkillsCard({
   return (
     <>
       <div className="bg-card border border-stroke rounded-lg p-2">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-xs font-bold text-muted">{title}</div>
+        <div className="flex items-center justify-between mb-1 md:mb-1.5">
+          <div className="text-xs md:text-sm font-bold text-muted">{title}</div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="text-xs text-accent hover:underline font-semibold"
+            className="text-xs md:text-sm text-accent hover:underline font-semibold"
           >
             +
           </button>
         </div>
 
         {visibleSkills.length === 0 ? (
-          <div className="text-xs text-muted text-center py-1">
+          <div className="text-xs md:text-sm text-muted text-center py-1">
             Nenhuma perícia
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1 md:gap-1.5">
             {visibleSkills.map((skill) => {
               const { total } = getSkillTotal(skill)
               return (
                 <Tooltip key={skill.name} content={skill.tooltip || skill.name}>
-                  <div className="bg-card-muted border border-stroke rounded px-1.5 py-1 hover:border-accent transition-colors cursor-pointer flex items-center justify-between gap-1">
-                    <div className="text-[10px] text-muted truncate leading-tight flex-1">
+                  <div className="bg-card-muted border border-stroke rounded px-1.5 py-1 md:py-1.5 hover:border-accent transition-colors cursor-pointer flex items-center justify-between gap-1">
+                    <div className="text-[10px] md:text-xs text-muted truncate leading-tight flex-1">
                       {skill.name}
                     </div>
                     <Rollable label={skill.name} modifier={total}>
-                      <div className="text-xs font-bold flex-shrink-0">
+                      <div className="text-xs md:text-sm font-bold flex-shrink-0">
                         {total >= 0 ? '+' : ''}{total}
                       </div>
                     </Rollable>

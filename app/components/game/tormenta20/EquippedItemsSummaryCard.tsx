@@ -124,14 +124,14 @@ export default function EquippedItemsSummaryCard({
       onClick={() => setSelectedSlot(slotKey)}
     >
       {item ? (
-        <span className="text-xs font-semibold truncate block" title={item.name}>
+        <span className="text-xs md:text-sm font-semibold truncate block" title={item.name}>
           {item.name}
           {item.quantity && item.quantity > 1 && (
             <span className="text-muted ml-1">×{item.quantity}</span>
           )}
         </span>
       ) : (
-        <span className="text-muted italic text-xs">{fallbackText}</span>
+        <span className="text-muted italic text-xs md:text-sm">{fallbackText}</span>
       )}
     </div>
   )
@@ -140,11 +140,11 @@ export default function EquippedItemsSummaryCard({
     <>
       <Card>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold">Equipamento</h3>
+          <h3 className="text-sm md:text-base font-bold">Equipamento</h3>
           {currencies && (
             <button
               onClick={handleOpenCurrencyModal}
-              className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+              className="flex items-center gap-1.5 text-[10px] md:text-xs px-2 py-0.5 bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
             >
               <span className="text-yellow-600 font-bold">{currencies.to}</span>
               <span className="text-muted">/</span>
@@ -155,39 +155,39 @@ export default function EquippedItemsSummaryCard({
           )}
         </div>
 
-        <div className="space-y-2 text-xs">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
             <div>
-              <div className="text-[10px] text-muted mb-0.5">Mão Direita</div>
+              <div className="text-[10px] md:text-xs text-muted mb-0.5">Mão Direita</div>
               {renderItem(equippedItems.rightHand, 'rightHand', 'Vazio')}
             </div>
             <div>
-              <div className="text-[10px] text-muted mb-0.5">Mão Esquerda</div>
+              <div className="text-[10px] md:text-xs text-muted mb-0.5">Mão Esquerda</div>
               {renderItem(equippedItems.leftHand, 'leftHand', 'Vazio')}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
             <div>
-              <div className="text-[10px] text-muted mb-0.5">Saque Rápido 1</div>
+              <div className="text-[10px] md:text-xs text-muted mb-0.5">Saque Rápido 1</div>
               {renderItem(equippedItems.quickDraw1, 'quickDraw1', 'Vazio')}
             </div>
             <div>
-              <div className="text-[10px] text-muted mb-0.5">Saque Rápido 2</div>
+              <div className="text-[10px] md:text-xs text-muted mb-0.5">Saque Rápido 2</div>
               {renderItem(equippedItems.quickDraw2, 'quickDraw2', 'Vazio')}
             </div>
           </div>
 
           <div>
-            <div className="text-[10px] text-muted mb-0.5">Slots de Utilidade</div>
-            <div className="flex flex-wrap gap-1">
+            <div className="text-[10px] md:text-xs text-muted mb-0.5">Slots de Utilidade</div>
+            <div className="flex flex-wrap gap-1 md:gap-1.5">
               {(['slot1', 'slot2', 'slot3', 'slot4'] as const).map((slotKey) => {
                 const item = equippedItems[slotKey]
                 if (!item) return null
                 return (
                   <span
                     key={slotKey}
-                    className="text-[10px] bg-card-muted px-1.5 py-0.5 rounded truncate max-w-[45%] cursor-pointer hover:border-accent border border-transparent transition-colors"
+                    className="text-[10px] md:text-xs bg-card-muted px-1.5 py-0.5 rounded truncate max-w-[45%] cursor-pointer hover:border-accent border border-transparent transition-colors"
                     title={item.name}
                     onClick={() => setSelectedSlot(slotKey)}
                   >
@@ -196,7 +196,7 @@ export default function EquippedItemsSummaryCard({
                 )
               })}
               {[equippedItems.slot1, equippedItems.slot2, equippedItems.slot3, equippedItems.slot4].every(item => !item) && (
-                <span className="text-muted italic text-[10px]">Nenhum item</span>
+                <span className="text-muted italic text-[10px] md:text-xs">Nenhum item</span>
               )}
             </div>
           </div>
@@ -366,6 +366,12 @@ export default function EquippedItemsSummaryCard({
               </label>
               <div className="flex items-center gap-1.5">
                 <button
+                  onClick={() => handleAddCurrency('to', -100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -100
+                </button>
+                <button
                   onClick={() => handleAddCurrency('to', -10)}
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
                 >
@@ -396,6 +402,12 @@ export default function EquippedItemsSummaryCard({
                 >
                   +10
                 </button>
+                <button
+                  onClick={() => handleAddCurrency('to', 100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +100
+                </button>
               </div>
             </div>
 
@@ -405,6 +417,12 @@ export default function EquippedItemsSummaryCard({
                 Tibares de Prata (TP)
               </label>
               <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAddCurrency('tp', -100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -100
+                </button>
                 <button
                   onClick={() => handleAddCurrency('tp', -10)}
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
@@ -436,6 +454,12 @@ export default function EquippedItemsSummaryCard({
                 >
                   +10
                 </button>
+                <button
+                  onClick={() => handleAddCurrency('tp', 100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +100
+                </button>
               </div>
             </div>
 
@@ -445,6 +469,12 @@ export default function EquippedItemsSummaryCard({
                 Tibares de Cobre (TC)
               </label>
               <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAddCurrency('tc', -100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -100
+                </button>
                 <button
                   onClick={() => handleAddCurrency('tc', -10)}
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
@@ -475,6 +505,12 @@ export default function EquippedItemsSummaryCard({
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
                 >
                   +10
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('tc', 100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +100
                 </button>
               </div>
             </div>

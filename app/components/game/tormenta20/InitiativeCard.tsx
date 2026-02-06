@@ -37,17 +37,17 @@ const InitiativeCard = ({ attributes, currentRoll, onSwitchToCombat, onRollIniti
   return (
     <>
       <div className="bg-card border border-stroke rounded-lg p-2">
-        <div className="flex items-center justify-between text-xs min-h-[20px]">
+        <div className="flex items-center justify-between text-xs md:text-sm min-h-[20px] md:min-h-[24px]">
           <span className="font-semibold text-muted">Iniciativa</span>
           <div className="flex items-center gap-2">
             {currentRoll !== null && currentRoll !== undefined && (
-              <div className="bg-accent text-card rounded px-2 py-0.5 text-sm font-bold">
+              <div className="bg-accent text-card rounded px-2 py-0.5 text-sm md:text-base font-bold">
                 {currentRoll}
               </div>
             )}
             <span
               onClick={handleClick}
-              className="cursor-pointer hover:text-accent transition-colors border-b border-dotted border-current font-bold"
+              className="cursor-pointer hover:text-accent transition-colors border-b border-dotted border-current font-bold text-base md:text-lg"
               title={`Clique para ${currentRoll !== null && currentRoll !== undefined ? 're-' : ''}rolar d20${attrModifier >= 0 ? '+' : ''}${attrModifier}`}
             >
               {attrModifier >= 0 ? '+' : ''}{attrModifier}
