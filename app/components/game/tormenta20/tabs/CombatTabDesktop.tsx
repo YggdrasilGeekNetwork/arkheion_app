@@ -3,7 +3,6 @@ import InitiativeRoller from '../InitiativeRoller'
 import ActionIndicator from '../ActionIndicator'
 import FavoritesSection from '../FavoritesSection'
 import ActionsCollapsible from '../ActionsCollapsible'
-import AbilitiesCollapsible from '../AbilitiesCollapsible'
 import WeaponModal from '../WeaponModal'
 import ChoiceModal from '../ChoiceModal'
 
@@ -111,16 +110,12 @@ export default function CombatTabDesktop({
               >
                 <ActionsCollapsible
                   actions={character.actionsList}
+                  abilities={character.abilities}
                   onUseAction={onUseAction}
+                  onUseAbility={onUseAbility}
                   onToggleFavorite={onToggleFavoriteAction}
+                  onToggleFavoriteAbility={onToggleFavoriteAbility}
                 />
-                {character.abilities && onUseAbility && onToggleFavoriteAbility && (
-                  <AbilitiesCollapsible
-                    abilities={character.abilities}
-                    onUseAbility={onUseAbility}
-                    onToggleFavorite={onToggleFavoriteAbility}
-                  />
-                )}
               </div>
             </td>
           </tr>

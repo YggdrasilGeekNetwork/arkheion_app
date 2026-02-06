@@ -12,7 +12,6 @@ import InitiativeCard from '../InitiativeCard'
 import SensesCard from '../SensesCard'
 import ProficienciesCard from '../ProficienciesCard'
 import EquippedItemsSummaryCard from '../EquippedItemsSummaryCard'
-import CurrencyCard from '../CurrencyCard'
 import ActiveEffectsSection from '../ActiveEffectsSection'
 import BottomNavigation from '../BottomNavigation'
 import AbilitiesTab from './AbilitiesTab'
@@ -52,6 +51,7 @@ type DesktopViewProps = {
   onReorderFavorites: (newWeapons: WeaponAttack[], newActions: CombatAction[], newAbilities?: Ability[]) => void
   onToggleFavoriteAction: (actionId: string) => void
   onToggleFavoriteAbility?: (abilityId: string) => void
+  onToggleFavoriteSpell?: (spellId: string) => void
   onSetWeaponModalOpen: (open: boolean) => void
   onAddWeapon: (weapon: Omit<WeaponAttack, 'id'>) => void
   onUpdateWeapon: (weaponId: string, weaponData: Omit<WeaponAttack, 'id' | 'isFavorite'>) => Promise<void>
@@ -107,6 +107,7 @@ export default function DesktopView({
   onReorderFavorites,
   onToggleFavoriteAction,
   onToggleFavoriteAbility,
+  onToggleFavoriteSpell,
   onSetWeaponModalOpen,
   onAddWeapon,
   onUpdateWeapon,
@@ -128,18 +129,18 @@ export default function DesktopView({
         {/* LEFT COLUMN: Always shows Summary */}
         <div className="flex-1 min-w-0 flex flex-col overflow-y-auto pr-2" style={{ height: '-webkit-fill-available' }}>
           {/* Attributes Section */}
-          <div className="grid grid-cols-6 gap-2 mb-3 min-h-[60px]">
+          <div className="grid grid-cols-6 gap-1.5 mb-2">
             {character.attributes.map((attr) => (
-              <div key={attr.label} className="flex flex-col items-center justify-center bg-card border border-stroke rounded-lg p-2 min-h-[56px]">
-                <div className="text-sm font-semibold text-muted">{attr.label}</div>
+              <div key={attr.label} className="flex flex-col items-center justify-center bg-card border border-stroke rounded-lg p-1.5">
+                <div className="text-xs font-semibold text-muted">{attr.label}</div>
                 <Rollable label={attr.label} modifier={attr.modifier}>
-                  <div className="text-lg font-bold">{attr.modifier >= 0 ? '+' : ''}{attr.modifier}</div>
+                  <div className="text-base font-bold">{attr.modifier >= 0 ? '+' : ''}{attr.modifier}</div>
                 </Rollable>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-[80px]">
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
             <HealthCard
               current={character.health}
               max={character.maxHealth}
@@ -156,9 +157,32 @@ export default function DesktopView({
           </div>
 
           {/* Separator */}
-          <hr className="h-px bg-stroke mb-3 flex-shrink-0" />
+          <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
 
-          <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-[100px]">
+          <div className="grid grid-cols-2 gap-1.5 mb-2 flex-1">
+            <SkillsCard
+              skills={character.skills}
+              attributes={character.attributes}
+              classes={character.classes}
+              onSkillsChange={onSkillsChange}
+              mode="summary"
+            />
+
+            <ActiveEffectsSection
+              character={character}
+              activeEffects={activeEffects}
+              onClearEffect={onClearEffect}
+              onClearEffectsByDuration={onClearEffectsByDuration}
+              onClearAllEffects={onClearAllEffects}
+              alwaysShow={true}
+            />
+          </div>
+
+          {/* Separator */}
+          <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
+
+          {/* Misc Info Section */}
+          <div className="grid grid-cols-3 gap-1.5 mb-2">
             <DefenseCard
               attributes={character.attributes}
               armor={2}
@@ -170,59 +194,45 @@ export default function DesktopView({
               ]}
             />
 
-            <SkillsCard
-              skills={character.skills}
-              attributes={character.attributes}
-              classes={character.classes}
-              onSkillsChange={onSkillsChange}
-              mode="summary"
-            />
-          </div>
-
-          {/* Separator */}
-          <hr className="h-px bg-stroke mb-3 flex-shrink-0" />
-
-          {/* Misc Info Section */}
-          <div className="grid grid-cols-2 gap-2 mb-3 min-h-[120px]">
-            <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help">
-              <div className="bg-card border border-stroke rounded-lg p-3 min-h-[48px] flex items-center">
-                <div className="flex items-center justify-between text-sm w-full">
-                  <span className="font-semibold text-muted">Tamanho <span className="opacity-50">?</span></span>
-                  <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-1.5">
+              <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help flex-1">
+                <div className="bg-card border border-stroke rounded-lg p-1.5 h-full flex items-center">
+                  <div className="flex items-center justify-between text-xs w-full">
+                    <span className="font-semibold text-muted">Tamanho</span>
                     <span className="font-bold">Médio</span>
-                    <span>|</span>
-                    <span className="text-muted">+0/-0</span>
                   </div>
                 </div>
-              </div>
-            </Tooltip>
+              </Tooltip>
 
-            <div className="bg-card border border-stroke rounded-lg p-3 min-h-[48px] flex items-center">
-              <div className="flex items-center justify-between text-sm w-full">
-                <span className="font-semibold text-muted">Deslocamento</span>
-                <span className="font-bold">9m / 6q</span>
+              <div className="bg-card border border-stroke rounded-lg p-1.5 flex-1 flex items-center">
+                <div className="flex items-center justify-between text-xs w-full">
+                  <span className="font-semibold text-muted">Desloc.</span>
+                  <span className="font-bold">9m / 6q</span>
+                </div>
               </div>
             </div>
 
-            <SpellDCCard
-              attributes={character.attributes}
-              hasSpells={true}
-              proficiencyBonus={2}
-            />
+            <div className="flex flex-col gap-1.5">
+              <SpellDCCard
+                attributes={character.attributes}
+                hasSpells={true}
+                proficiencyBonus={2}
+              />
 
-            <InitiativeCard
-              attributes={character.attributes}
-              currentRoll={character.initiativeRoll}
-              onSwitchToCombat={onSwitchToCombat}
-              onRollInitiative={onRollInitiative}
-            />
+              <InitiativeCard
+                attributes={character.attributes}
+                currentRoll={character.initiativeRoll}
+                onSwitchToCombat={onSwitchToCombat}
+                onRollInitiative={onRollInitiative}
+              />
+            </div>
           </div>
 
           {/* Separator */}
-          <hr className="h-px bg-stroke mb-3 flex-shrink-0" />
+          <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
 
           {/* Senses, Proficiencies Section */}
-          <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-[80px]">
+          <div className="grid grid-cols-2 gap-1.5 mb-2 flex-1">
             <SensesCard
               senses={senses}
               onSensesChange={onSensesChange}
@@ -235,28 +245,18 @@ export default function DesktopView({
           </div>
 
           {/* Separator */}
-          <hr className="h-px bg-stroke mb-3 flex-shrink-0" />
+          <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
 
-          {/* Equipment and Currency Section */}
-          <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-[100px]">
+          {/* Equipment Section with inline currencies */}
+          <div className="mb-2 flex-1">
             <EquippedItemsSummaryCard
               character={character}
               onEquippedItemsChange={onEquippedItemsChange}
               onBackpackChange={onBackpackChange}
               onUseConsumable={onUseConsumable}
               onCombatAction={onCombatAction}
-            />
-            <CurrencyCard currencies={character.currencies} onCurrenciesChange={onCurrenciesChange} />
-          </div>
-
-          {/* Active Effects Section */}
-          <div className="flex-1 min-h-[60px]">
-            <ActiveEffectsSection
-              character={character}
-              activeEffects={activeEffects}
-              onClearEffect={onClearEffect}
-              onClearEffectsByDuration={onClearEffectsByDuration}
-              onClearAllEffects={onClearAllEffects}
+              currencies={character.currencies}
+              onCurrenciesChange={onCurrenciesChange}
             />
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function DesktopView({
         <div className="w-px bg-stroke flex-shrink-0" />
 
         {/* RIGHT COLUMN: Shows other tabs */}
-        <div className="flex-1 min-w-0 flex flex-col pl-2" >
+        <div className="flex-1 min-w-0 flex flex-col pl-2 overflow-y-auto" >
           {/* COMBATE TAB */}
           {activeNavDesktop === 'combat' && (
             <div className="grid overflow-y-auto " style={{ height: '-webkit-fill-available' }}>
@@ -308,6 +308,10 @@ export default function DesktopView({
             <AbilitiesTab
               character={character}
               onAddActiveEffect={onAddActiveEffect}
+              onToggleFavoriteAbility={onToggleFavoriteAbility}
+              onToggleFavoriteSpell={onToggleFavoriteSpell}
+              onManaChange={onManaChange}
+              onHealthChange={onHealthChange}
             />
           )}
 

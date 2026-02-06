@@ -7,6 +7,7 @@ import BasicInfoStep from './steps/BasicInfoStep'
 import RaceStep from './steps/RaceStep'
 import ClassStep from './steps/ClassStep'
 import AttributesStep from './steps/AttributesStep'
+import DeityStep from './steps/DeityStep'
 import SkillsStep from './steps/SkillsStep'
 import AbilitiesStep from './steps/AbilitiesStep'
 import EquipmentStep from './steps/EquipmentStep'
@@ -32,6 +33,7 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
     { id: 'race' as const, label: STEP_LABELS['race'] },
     { id: 'class' as const, label: STEP_LABELS['class'] },
     { id: 'attributes' as const, label: STEP_LABELS['attributes'] },
+    { id: 'deity' as const, label: STEP_LABELS['deity'] },
     { id: 'skills' as const, label: STEP_LABELS['skills'] },
     { id: 'abilities' as const, label: STEP_LABELS['abilities'] },
     { id: 'equipment' as const, label: STEP_LABELS['equipment'] },
@@ -78,6 +80,8 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
         return <ClassStep />
       case 'attributes':
         return <AttributesStep />
+      case 'deity':
+        return <DeityStep />
       case 'skills':
         return <SkillsStep />
       case 'abilities':

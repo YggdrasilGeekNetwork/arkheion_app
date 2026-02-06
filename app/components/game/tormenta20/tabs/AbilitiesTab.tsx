@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Character, Ability, Spell, SpellEnhancement } from '~/types/character'
 import Modal from '~/components/ui/Modal'
 
@@ -26,6 +26,24 @@ const SCHOOL_LABELS: Record<string, string> = {
   trans: 'Transmutação',
 }
 
+// Spell sorting options
+type SpellSortOption = 'name' | 'circle' | 'school' | 'type' | 'execution'
+const SPELL_SORT_OPTIONS: { value: SpellSortOption; label: string }[] = [
+  { value: 'name', label: 'Nome' },
+  { value: 'circle', label: 'Círculo' },
+  { value: 'school', label: 'Escola' },
+  { value: 'type', label: 'Tipo' },
+  { value: 'execution', label: 'Execução' },
+]
+
+// Spell filter types
+type SpellFilters = {
+  circle: number | null
+  school: string | null
+  type: 'arcana' | 'divina' | null
+  favorites: boolean
+}
+
 type AbilitiesTabProps = {
   character: Character
   onAddActiveEffect?: (effect: {
@@ -36,6 +54,10 @@ type AbilitiesTabProps = {
     duration?: string
     consumeOnAttack?: boolean
   }) => void
+  onToggleFavoriteAbility?: (abilityId: string) => void
+  onToggleFavoriteSpell?: (spellId: string) => void
+  onManaChange?: (delta: number) => void
+  onHealthChange?: (delta: number) => void
 }
 
 function Collapsible({ title, count, isOpen, onToggle, children }: {
@@ -62,7 +84,17 @@ function Collapsible({ title, count, isOpen, onToggle, children }: {
   )
 }
 
-function AbilityCard({ ability, onUse }: { ability: Ability; onUse?: (ability: Ability) => void }) {
+function AbilityCard({
+  ability,
+  onUse,
+  onToggleFavorite,
+  showFavorite = false,
+}: {
+  ability: Ability
+  onUse?: (ability: Ability) => void
+  onToggleFavorite?: () => void
+  showFavorite?: boolean
+}) {
   const isActive = ability.type === 'active'
 
   return (
@@ -79,6 +111,19 @@ function AbilityCard({ ability, onUse }: { ability: Ability; onUse?: (ability: A
             <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">
               {ability.cost.pm} PM
             </span>
+          )}
+          {showFavorite && onToggleFavorite && (
+            <button
+              onClick={onToggleFavorite}
+              className={`text-[10px] px-1.5 py-1 rounded transition-colors ${
+                ability.isFavorite
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-card text-muted hover:text-yellow-400'
+              }`}
+              title={ability.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+            >
+              {ability.isFavorite ? '★' : '☆'}
+            </button>
           )}
           {isActive && onUse && (
             <button
@@ -103,7 +148,17 @@ function AbilityCard({ ability, onUse }: { ability: Ability; onUse?: (ability: A
   )
 }
 
-function SpellCard({ spell, onCast }: { spell: Spell; onCast: (spell: Spell) => void }) {
+function SpellCard({
+  spell,
+  onCast,
+  onToggleFavorite,
+  showFavorite = false,
+}: {
+  spell: Spell
+  onCast: (spell: Spell) => void
+  onToggleFavorite?: () => void
+  showFavorite?: boolean
+}) {
   const basePmCost = spell.circle * 2 - 1 // 1º círculo = 1 PM, 2º = 3 PM, etc.
 
   return (
@@ -118,12 +173,27 @@ function SpellCard({ spell, onCast }: { spell: Spell; onCast: (spell: Spell) => 
             {spell.type}
           </span>
         </div>
-        <button
-          onClick={() => onCast(spell)}
-          className="text-[10px] px-2 py-1 bg-accent/20 text-accent rounded hover:bg-accent/30 transition-colors font-semibold"
-        >
-          Lançar
-        </button>
+        <div className="flex items-center gap-1.5">
+          {showFavorite && onToggleFavorite && (
+            <button
+              onClick={onToggleFavorite}
+              className={`text-[10px] px-1.5 py-1 rounded transition-colors ${
+                spell.isFavorite
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-card text-muted hover:text-yellow-400'
+              }`}
+              title={spell.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+            >
+              {spell.isFavorite ? '★' : '☆'}
+            </button>
+          )}
+          <button
+            onClick={() => onCast(spell)}
+            className="text-[10px] px-2 py-1 bg-accent/20 text-accent rounded hover:bg-accent/30 transition-colors font-semibold"
+          >
+            Lançar
+          </button>
+        </div>
       </div>
       <div className="text-muted mb-1.5">{spell.description}</div>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted">
@@ -144,6 +214,7 @@ function SpellCastModal({
   onClose,
   character,
   onAddActiveEffect,
+  onManaChange,
 }: {
   spell: Spell | null
   isOpen: boolean
@@ -157,6 +228,7 @@ function SpellCastModal({
     duration?: string
     consumeOnAttack?: boolean
   }) => void
+  onManaChange?: (delta: number) => void
 }) {
   const [selectedEnhancements, setSelectedEnhancements] = useState<number[]>([])
   const [autoRollDamage, setAutoRollDamage] = useState(true)
@@ -181,6 +253,11 @@ function SpellCastModal({
   }
 
   const handleCast = () => {
+    // Deduct PM
+    if (onManaChange) {
+      onManaChange(-totalPmCost)
+    }
+
     // Add active effect if callback is provided and spell has duration
     if (onAddActiveEffect && spell.duration && spell.duration !== 'instantânea') {
       onAddActiveEffect({
@@ -191,10 +268,9 @@ function SpellCastModal({
         duration: spell.duration,
       })
     }
-    // TODO: Implement actual casting logic
-    // - Deduct PM
-    // - Roll damage if autoRollDamage and hasDamageRoll
-    console.log('Casting spell:', spell.name, 'with enhancements:', selectedEnhancements)
+
+    // TODO: Roll damage if autoRollDamage and hasDamageRoll
+    console.log('Casting spell:', spell.name, 'with enhancements:', selectedEnhancements, 'PM cost:', totalPmCost)
     onClose()
   }
 
@@ -322,7 +398,14 @@ function SpellCastModal({
   )
 }
 
-export default function AbilitiesTab({ character, onAddActiveEffect }: AbilitiesTabProps) {
+export default function AbilitiesTab({
+  character,
+  onAddActiveEffect,
+  onToggleFavoriteAbility,
+  onToggleFavoriteSpell,
+  onManaChange,
+  onHealthChange,
+}: AbilitiesTabProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     active: true,
     passive: true,
@@ -331,13 +414,78 @@ export default function AbilitiesTab({ character, onAddActiveEffect }: Abilities
   const [castingSpell, setCastingSpell] = useState<Spell | null>(null)
   const [usingAbility, setUsingAbility] = useState<Ability | null>(null)
 
+  // Spell sorting and filtering state
+  const [spellSort, setSpellSort] = useState<SpellSortOption>('circle')
+  const [spellFilters, setSpellFilters] = useState<SpellFilters>({
+    circle: null,
+    school: null,
+    type: null,
+    favorites: false,
+  })
+
   const toggleSection = (section: string) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
   const activeAbilities = character.abilities?.filter(a => a.type === 'active') || []
   const passiveAbilities = character.abilities?.filter(a => a.type === 'passive') || []
-  const spells = character.spells || []
+  const allSpells = character.spells || []
+
+  // Get unique values for filter dropdowns
+  const availableCircles = useMemo(() => {
+    const circles = [...new Set(allSpells.map(s => s.circle))].sort((a, b) => a - b)
+    return circles
+  }, [allSpells])
+
+  const availableSchools = useMemo(() => {
+    const schools = [...new Set(allSpells.map(s => s.school))]
+    return schools.sort()
+  }, [allSpells])
+
+  // Filter and sort spells
+  const filteredAndSortedSpells = useMemo(() => {
+    let result = [...allSpells]
+
+    // Apply filters
+    if (spellFilters.circle !== null) {
+      result = result.filter(s => s.circle === spellFilters.circle)
+    }
+    if (spellFilters.school !== null) {
+      result = result.filter(s => s.school === spellFilters.school)
+    }
+    if (spellFilters.type !== null) {
+      result = result.filter(s => s.type === spellFilters.type)
+    }
+    if (spellFilters.favorites) {
+      result = result.filter(s => s.isFavorite)
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (spellSort) {
+        case 'name':
+          return a.name.localeCompare(b.name)
+        case 'circle':
+          return a.circle - b.circle || a.name.localeCompare(b.name)
+        case 'school':
+          return a.school.localeCompare(b.school) || a.name.localeCompare(b.name)
+        case 'type':
+          return a.type.localeCompare(b.type) || a.name.localeCompare(b.name)
+        case 'execution':
+          return a.execution.localeCompare(b.execution) || a.name.localeCompare(b.name)
+        default:
+          return 0
+      }
+    })
+
+    return result
+  }, [allSpells, spellFilters, spellSort])
+
+  const hasActiveFilters = spellFilters.circle !== null || spellFilters.school !== null || spellFilters.type !== null || spellFilters.favorites
+
+  const clearFilters = () => {
+    setSpellFilters({ circle: null, school: null, type: null, favorites: false })
+  }
 
   return (
     <div className="space-y-3">
@@ -349,7 +497,13 @@ export default function AbilitiesTab({ character, onAddActiveEffect }: Abilities
           onToggle={() => toggleSection('active')}
         >
           {activeAbilities.map(ability => (
-            <AbilityCard key={ability.id} ability={ability} onUse={setUsingAbility} />
+            <AbilityCard
+              key={ability.id}
+              ability={ability}
+              onUse={setUsingAbility}
+              onToggleFavorite={onToggleFavoriteAbility ? () => onToggleFavoriteAbility(ability.id) : undefined}
+              showFavorite={!!onToggleFavoriteAbility}
+            />
           ))}
         </Collapsible>
       )}
@@ -367,21 +521,166 @@ export default function AbilitiesTab({ character, onAddActiveEffect }: Abilities
         </Collapsible>
       )}
 
-      {spells.length > 0 && (
-        <Collapsible
-          title="Magias"
-          count={spells.length}
-          isOpen={openSections.spells}
-          onToggle={() => toggleSection('spells')}
-        >
-          {spells.map(spell => (
-            <SpellCard
-              key={spell.id}
-              spell={spell}
-              onCast={setCastingSpell}
-            />
-          ))}
-        </Collapsible>
+      {allSpells.length > 0 && (
+        <div className="bg-card border border-stroke rounded-lg overflow-hidden">
+          <button
+            onClick={() => toggleSection('spells')}
+            className="w-full flex items-center justify-between p-3 hover:bg-card-muted transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Magias</span>
+              <span className="text-xs bg-card-muted px-2 py-0.5 rounded">
+                {filteredAndSortedSpells.length}
+                {hasActiveFilters && ` / ${allSpells.length}`}
+              </span>
+            </div>
+            <div className={`transition-transform ${openSections.spells ? 'rotate-180' : ''}`}>▼</div>
+          </button>
+
+          {openSections.spells && (
+            <div className="p-3 space-y-3">
+              {/* Filters and Sort */}
+              <div className="flex flex-wrap gap-2 pb-2 border-b border-stroke">
+                {/* Sort dropdown */}
+                <select
+                  value={spellSort}
+                  onChange={(e) => setSpellSort(e.target.value as SpellSortOption)}
+                  className="text-xs px-2 py-1 bg-card-muted border border-stroke rounded focus:outline-none focus:border-accent"
+                >
+                  {SPELL_SORT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      Ordenar: {opt.label}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Circle filter */}
+                <div className="flex items-center gap-0.5">
+                  <select
+                    value={spellFilters.circle ?? ''}
+                    onChange={(e) => setSpellFilters(prev => ({
+                      ...prev,
+                      circle: e.target.value ? Number(e.target.value) : null
+                    }))}
+                    className={`text-xs px-2 py-1 bg-card-muted border rounded focus:outline-none focus:border-accent ${
+                      spellFilters.circle !== null ? 'border-accent' : 'border-stroke'
+                    }`}
+                  >
+                    <option value="">Todos círculos</option>
+                    {availableCircles.map(c => (
+                      <option key={c} value={c}>{c}º círculo</option>
+                    ))}
+                  </select>
+                  {spellFilters.circle !== null && (
+                    <button
+                      onClick={() => setSpellFilters(prev => ({ ...prev, circle: null }))}
+                      className="text-xs px-1 py-1 text-muted hover:text-red-400 transition-colors"
+                      title="Limpar filtro"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* School filter */}
+                <div className="flex items-center gap-0.5">
+                  <select
+                    value={spellFilters.school ?? ''}
+                    onChange={(e) => setSpellFilters(prev => ({
+                      ...prev,
+                      school: e.target.value || null
+                    }))}
+                    className={`text-xs px-2 py-1 bg-card-muted border rounded focus:outline-none focus:border-accent ${
+                      spellFilters.school !== null ? 'border-accent' : 'border-stroke'
+                    }`}
+                  >
+                    <option value="">Todas escolas</option>
+                    {availableSchools.map(s => (
+                      <option key={s} value={s}>{SCHOOL_LABELS[s] || s}</option>
+                    ))}
+                  </select>
+                  {spellFilters.school !== null && (
+                    <button
+                      onClick={() => setSpellFilters(prev => ({ ...prev, school: null }))}
+                      className="text-xs px-1 py-1 text-muted hover:text-red-400 transition-colors"
+                      title="Limpar filtro"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Type filter */}
+                <div className="flex items-center gap-0.5">
+                  <select
+                    value={spellFilters.type ?? ''}
+                    onChange={(e) => setSpellFilters(prev => ({
+                      ...prev,
+                      type: (e.target.value as 'arcana' | 'divina') || null
+                    }))}
+                    className={`text-xs px-2 py-1 bg-card-muted border rounded focus:outline-none focus:border-accent ${
+                      spellFilters.type !== null ? 'border-accent' : 'border-stroke'
+                    }`}
+                  >
+                    <option value="">Todos tipos</option>
+                    <option value="arcana">Arcana</option>
+                    <option value="divina">Divina</option>
+                  </select>
+                  {spellFilters.type !== null && (
+                    <button
+                      onClick={() => setSpellFilters(prev => ({ ...prev, type: null }))}
+                      className="text-xs px-1 py-1 text-muted hover:text-red-400 transition-colors"
+                      title="Limpar filtro"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Favorites filter */}
+                <button
+                  onClick={() => setSpellFilters(prev => ({ ...prev, favorites: !prev.favorites }))}
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${
+                    spellFilters.favorites
+                      ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
+                      : 'bg-card-muted border-stroke text-muted hover:border-yellow-500'
+                  }`}
+                >
+                  ★ Favoritos
+                </button>
+
+                {/* Clear filters */}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded border border-red-500/50 hover:bg-red-500/30 transition-colors"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+
+              {/* Spell list */}
+              <div className="space-y-2">
+                {filteredAndSortedSpells.length > 0 ? (
+                  filteredAndSortedSpells.map(spell => (
+                    <SpellCard
+                      key={spell.id}
+                      spell={spell}
+                      onCast={setCastingSpell}
+                      onToggleFavorite={onToggleFavoriteSpell ? () => onToggleFavoriteSpell(spell.id) : undefined}
+                      showFavorite={!!onToggleFavoriteSpell}
+                    />
+                  ))
+                ) : (
+                  <div className="text-xs text-muted text-center py-4">
+                    Nenhuma magia encontrada com os filtros selecionados.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Spell Casting Modal */}
@@ -391,6 +690,7 @@ export default function AbilitiesTab({ character, onAddActiveEffect }: Abilities
         onClose={() => setCastingSpell(null)}
         character={character}
         onAddActiveEffect={onAddActiveEffect}
+        onManaChange={onManaChange}
       />
 
       {/* Ability Use Modal */}
@@ -454,6 +754,15 @@ export default function AbilitiesTab({ character, onAddActiveEffect }: Abilities
               </div>
               <button
                 onClick={() => {
+                  // Deduct PM
+                  if (usingAbility.cost?.pm && onManaChange) {
+                    onManaChange(-usingAbility.cost.pm)
+                  }
+                  // Deduct PV
+                  if (usingAbility.cost?.pv && onHealthChange) {
+                    onHealthChange(-usingAbility.cost.pv)
+                  }
+
                   // Add active effect if callback is provided
                   if (onAddActiveEffect) {
                     onAddActiveEffect({
@@ -464,10 +773,9 @@ export default function AbilitiesTab({ character, onAddActiveEffect }: Abilities
                       duration: usingAbility.usesPerDay !== undefined ? 'até descansar' : undefined,
                     })
                   }
-                  // TODO: Implement actual ability use logic
-                  // - Deduct PM/PV
-                  // - Track uses per day
-                  console.log('Using ability:', usingAbility.name)
+
+                  // TODO: Track uses per day
+                  console.log('Using ability:', usingAbility.name, 'PM:', usingAbility.cost?.pm, 'PV:', usingAbility.cost?.pv)
                   setUsingAbility(null)
                 }}
                 disabled={

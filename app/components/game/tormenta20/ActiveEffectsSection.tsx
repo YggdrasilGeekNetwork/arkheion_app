@@ -26,6 +26,7 @@ type ActiveEffectsSectionProps = {
   onClearEffect: (effectId: string) => void
   onClearEffectsByDuration: (duration: string) => void
   onClearAllEffects: () => void
+  alwaysShow?: boolean
 }
 
 export default function ActiveEffectsSection({
@@ -34,13 +35,14 @@ export default function ActiveEffectsSection({
   onClearEffect,
   onClearEffectsByDuration,
   onClearAllEffects,
+  alwaysShow = false,
 }: ActiveEffectsSectionProps) {
   const [modalOpen, setModalOpen] = useState(false)
 
   const passiveEffects = getPassiveEffects(character.equippedItems)
   const hasAnyEffects = passiveEffects.length > 0 || activeEffects.length > 0
 
-  if (!hasAnyEffects) return null
+  if (!hasAnyEffects && !alwaysShow) return null
 
   const durations = [...new Set(activeEffects.map(e => e.duration || 'permanente'))]
 
@@ -60,6 +62,11 @@ export default function ActiveEffectsSection({
         </div>
 
         <div className="space-y-1.5">
+          {!hasAnyEffects && (
+            <div className="text-xs text-muted text-center py-2 italic">
+              Nenhum efeito ativo
+            </div>
+          )}
           {passiveEffects.map((pe, idx) => (
             <div key={`passive-${idx}`} className="flex items-start gap-2 text-xs p-1.5 bg-card-muted rounded">
               <span className="text-[10px] px-1 py-0.5 bg-accent/20 text-accent rounded flex-shrink-0 whitespace-nowrap">Passivo</span>

@@ -7,7 +7,6 @@ import DefenseCard from '../DefenseCard'
 import SkillsCard from '../SkillsCard'
 import FavoritesSection from '../FavoritesSection'
 import ActionsCollapsible from '../ActionsCollapsible'
-import AbilitiesCollapsible from '../AbilitiesCollapsible'
 import WeaponModal from '../WeaponModal'
 import ChoiceModal from '../ChoiceModal'
 
@@ -136,21 +135,15 @@ export default function CombatTab({
         onReorderFavorites={onReorderFavorites}
       />
 
-      {/* Actions Collapsible */}
+      {/* Actions Collapsible (includes abilities grouped by action type) */}
       <ActionsCollapsible
         actions={character.actionsList}
+        abilities={character.abilities}
         onUseAction={onUseAction}
+        onUseAbility={onUseAbility}
         onToggleFavorite={onToggleFavoriteAction}
+        onToggleFavoriteAbility={onToggleFavoriteAbility}
       />
-
-      {/* Abilities Collapsible */}
-      {character.abilities && onUseAbility && onToggleFavoriteAbility && (
-        <AbilitiesCollapsible
-          abilities={character.abilities}
-          onUseAbility={onUseAbility}
-          onToggleFavorite={onToggleFavoriteAbility}
-        />
-      )}
 
       {/* Manage Weapons Button */}
       <button

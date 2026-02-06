@@ -287,6 +287,40 @@ const mockDeities: DeityData[] = [
     description: 'Deus da justiça, da honra e do dever.',
     alignment: 'Leal e Bom',
     domains: ['Guerra', 'Proteção'],
+    values: 'Justiça, honra, dever, proteção dos inocentes, cumprimento de promessas.',
+    energy: 'positiva',
+    favoriteWeapon: 'Espada longa',
+    obligations: [
+      'Nunca mentir ou trapacear.',
+      'Sempre cumprir sua palavra.',
+      'Proteger os inocentes e punir os culpados.',
+    ],
+    restrictions: [
+      'Nunca fugir de um combate justo.',
+      'Nunca usar venenos ou armadilhas traiçoeiras.',
+    ],
+    powers: [
+      {
+        id: 'coragem-total',
+        name: 'Coragem Total',
+        description: 'Você é imune a medo.',
+        type: 'passive',
+      },
+      {
+        id: 'golpe-justiceiro',
+        name: 'Golpe Justiceiro',
+        description: 'Você pode gastar 2 PM para causar +2d6 de dano em um ataque contra um inimigo que tenha ferido um aliado.',
+        type: 'active',
+        actionType: 'livre',
+        cost: { pm: 2 },
+      },
+      {
+        id: 'aura-ordem',
+        name: 'Aura da Ordem',
+        description: 'Você e aliados em alcance curto recebem +2 em testes de resistência contra efeitos de caos.',
+        type: 'passive',
+      },
+    ],
   },
   {
     id: 'valkaria',
@@ -294,6 +328,40 @@ const mockDeities: DeityData[] = [
     description: 'Deusa da ambição, da liberdade e da humanidade.',
     alignment: 'Neutro e Bom',
     domains: ['Glória', 'Proteção'],
+    values: 'Ambição, coragem, liberdade, superação de limites, humanidade.',
+    energy: 'positiva',
+    favoriteWeapon: 'Lança',
+    obligations: [
+      'Nunca aceitar limites impostos por outros.',
+      'Sempre buscar superar seus próprios limites.',
+      'Proteger a liberdade dos outros.',
+    ],
+    restrictions: [
+      'Nunca aceitar a escravidão ou servidão.',
+      'Nunca desistir de um objetivo por medo.',
+    ],
+    powers: [
+      {
+        id: 'aura-coragem',
+        name: 'Aura da Coragem',
+        description: 'Você e aliados em alcance curto recebem +2 em testes contra medo.',
+        type: 'passive',
+      },
+      {
+        id: 'superacao',
+        name: 'Superação',
+        description: 'Uma vez por cena, quando falhar em um teste, você pode gastar 2 PM para rolar novamente.',
+        type: 'active',
+        actionType: 'reação',
+        cost: { pm: 2 },
+      },
+      {
+        id: 'gloria-heroi',
+        name: 'Glória do Herói',
+        description: 'Quando reduz um inimigo a 0 PV, você recupera 1d6 PM.',
+        type: 'passive',
+      },
+    ],
   },
   {
     id: 'arsenal',
@@ -301,6 +369,40 @@ const mockDeities: DeityData[] = [
     description: 'Deus da guerra e das batalhas.',
     alignment: 'Neutro',
     domains: ['Guerra', 'Força'],
+    values: 'Combate, força, táticas de guerra, vitória, honra marcial.',
+    energy: 'positiva',
+    favoriteWeapon: 'Machado de batalha',
+    obligations: [
+      'Nunca recusar um desafio de combate.',
+      'Respeitar oponentes valorosos.',
+      'Buscar sempre a vitória em batalha.',
+    ],
+    restrictions: [
+      'Nunca atacar inimigos desarmados que se rendam.',
+      'Nunca usar táticas covardes.',
+    ],
+    powers: [
+      {
+        id: 'ataque-poderoso',
+        name: 'Ataque Poderoso',
+        description: 'Você pode gastar 1 PM para causar +1d6 de dano em um ataque corpo a corpo.',
+        type: 'active',
+        actionType: 'livre',
+        cost: { pm: 1 },
+      },
+      {
+        id: 'furia-batalha',
+        name: 'Fúria de Batalha',
+        description: 'Quando sofre dano, você recebe +1 em ataques até o fim da cena. Cumulativo.',
+        type: 'passive',
+      },
+      {
+        id: 'resistencia-marcial',
+        name: 'Resistência Marcial',
+        description: 'Você recebe resistência a dano 2.',
+        type: 'passive',
+      },
+    ],
   },
   {
     id: 'nimb',
@@ -308,6 +410,39 @@ const mockDeities: DeityData[] = [
     description: 'Deus do caos e da sorte.',
     alignment: 'Caótico e Neutro',
     domains: ['Caos', 'Sorte'],
+    values: 'Caos, sorte, imprevisibilidade, diversão, mudança.',
+    energy: 'positiva',
+    favoriteWeapon: 'Adaga',
+    obligations: [
+      'Nunca seguir um plano rígido.',
+      'Sempre abraçar o inesperado.',
+      'Trazer diversão e caos aonde for.',
+    ],
+    restrictions: [
+      'Nunca ser previsível ou rotineiro.',
+      'Nunca impedir a mudança.',
+    ],
+    powers: [
+      {
+        id: 'sorte-nimb',
+        name: 'Sorte de Nimb',
+        description: 'Uma vez por cena, você pode rolar novamente um d20.',
+        type: 'active',
+        actionType: 'reação',
+      },
+      {
+        id: 'aura-caos',
+        name: 'Aura do Caos',
+        description: 'Inimigos em alcance curto sofrem -2 em testes de resistência contra suas magias.',
+        type: 'passive',
+      },
+      {
+        id: 'benção-imprevisivel',
+        name: 'Bênção Imprevisível',
+        description: 'No início de cada cena, role 1d6: 1-2 receba +2 em Defesa, 3-4 receba +2 em ataques, 5-6 receba +2 em testes.',
+        type: 'passive',
+      },
+    ],
   },
 ]
 

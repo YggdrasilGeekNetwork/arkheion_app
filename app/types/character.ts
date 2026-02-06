@@ -149,6 +149,8 @@ export type Spell = {
   description: string
   enhancements?: SpellEnhancement[]
   effects?: SpellEffect[]
+  isFavorite?: boolean
+  favoriteOrder?: number
 }
 
 export type EquippedItems = {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Card from '~/components/ui/Card'
 import Modal from '~/components/ui/Modal'
-import type { Character, EquipmentItem, EquippedItems } from '~/types/character'
+import type { Character, EquipmentItem, EquippedItems, Currencies } from '~/types/character'
 
 type EquippedItemsSummaryCardProps = {
   character: Character
@@ -9,6 +9,8 @@ type EquippedItemsSummaryCardProps = {
   onBackpackChange: (newBackpack: (EquipmentItem | null)[]) => void
   onUseConsumable: (item: EquipmentItem, source: 'equipped' | 'backpack', slotKey: string) => void
   onCombatAction: (description: string, actionCost: string, execute: () => void) => void
+  currencies?: Currencies
+  onCurrenciesChange?: (newCurrencies: Currencies) => void
 }
 
 const QUICK_ACCESS_SLOTS = ['rightHand', 'leftHand', 'quickDraw1', 'quickDraw2']
@@ -30,8 +32,14 @@ export default function EquippedItemsSummaryCard({
   onBackpackChange,
   onUseConsumable,
   onCombatAction,
+  currencies,
+  onCurrenciesChange,
 }: EquippedItemsSummaryCardProps) {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
+  const [currencyModalOpen, setCurrencyModalOpen] = useState(false)
+  const [editTO, setEditTO] = useState(currencies?.to.toString() || '0')
+  const [editTP, setEditTP] = useState(currencies?.tp.toString() || '0')
+  const [editTC, setEditTC] = useState(currencies?.tc.toString() || '0')
 
   const equippedItems = character.equippedItems
 
@@ -48,6 +56,36 @@ export default function EquippedItemsSummaryCard({
     .slice(0, backpackSwapCount)
 
   const hasConsumableEffects = selectedItem?.effects?.some(e => e.type === 'consumable') ?? false
+
+  const handleOpenCurrencyModal = () => {
+    setEditTO(currencies?.to.toString() || '0')
+    setEditTP(currencies?.tp.toString() || '0')
+    setEditTC(currencies?.tc.toString() || '0')
+    setCurrencyModalOpen(true)
+  }
+
+  const handleSaveCurrencies = () => {
+    if (onCurrenciesChange) {
+      onCurrenciesChange({
+        to: parseInt(editTO) || 0,
+        tp: parseInt(editTP) || 0,
+        tc: parseInt(editTC) || 0,
+      })
+    }
+    setCurrencyModalOpen(false)
+  }
+
+  const handleAddCurrency = (type: 'to' | 'tp' | 'tc', amount: number) => {
+    const current = {
+      to: parseInt(editTO) || 0,
+      tp: parseInt(editTP) || 0,
+      tc: parseInt(editTC) || 0,
+    }
+    current[type] = Math.max(0, current[type] + amount)
+    setEditTO(current.to.toString())
+    setEditTP(current.tp.toString())
+    setEditTC(current.tc.toString())
+  }
 
   const handleSwap = (targetSlot: string, targetSource: 'equipped' | 'backpack', targetIndex?: number) => {
     if (!selectedSlot) return
@@ -103,6 +141,18 @@ export default function EquippedItemsSummaryCard({
       <Card>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-bold">Equipamento</h3>
+          {currencies && (
+            <button
+              onClick={handleOpenCurrencyModal}
+              className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+            >
+              <span className="text-yellow-600 font-bold">{currencies.to}</span>
+              <span className="text-muted">/</span>
+              <span className="text-gray-300 font-bold">{currencies.tp}</span>
+              <span className="text-muted">/</span>
+              <span className="text-orange-700 font-bold">{currencies.tc}</span>
+            </button>
+          )}
         </div>
 
         <div className="space-y-2 text-xs">
@@ -300,6 +350,163 @@ export default function EquippedItemsSummaryCard({
           <p className="text-sm text-muted text-center py-4">Este slot está vazio</p>
         )}
       </Modal>
+
+      {/* Currency Edit Modal */}
+      {currencies && onCurrenciesChange && (
+        <Modal
+          isOpen={currencyModalOpen}
+          onClose={() => setCurrencyModalOpen(false)}
+          title="Editar Moedas"
+        >
+          <div className="space-y-4">
+            {/* Tibares de Ouro */}
+            <div>
+              <label className="block text-xs font-semibold text-muted mb-1.5">
+                Tibares de Ouro (TO)
+              </label>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAddCurrency('to', -10)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -10
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('to', -1)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -1
+                </button>
+                <input
+                  type="number"
+                  value={editTO}
+                  onChange={(e) => setEditTO(e.target.value)}
+                  className="flex-1 px-2 py-1.5 text-sm bg-card-muted border border-stroke rounded text-center font-bold text-yellow-600"
+                  min="0"
+                />
+                <button
+                  onClick={() => handleAddCurrency('to', 1)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +1
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('to', 10)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +10
+                </button>
+              </div>
+            </div>
+
+            {/* Tibares de Prata */}
+            <div>
+              <label className="block text-xs font-semibold text-muted mb-1.5">
+                Tibares de Prata (TP)
+              </label>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAddCurrency('tp', -10)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -10
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('tp', -1)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -1
+                </button>
+                <input
+                  type="number"
+                  value={editTP}
+                  onChange={(e) => setEditTP(e.target.value)}
+                  className="flex-1 px-2 py-1.5 text-sm bg-card-muted border border-stroke rounded text-center font-bold text-gray-300"
+                  min="0"
+                />
+                <button
+                  onClick={() => handleAddCurrency('tp', 1)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +1
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('tp', 10)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +10
+                </button>
+              </div>
+            </div>
+
+            {/* Tibares de Cobre */}
+            <div>
+              <label className="block text-xs font-semibold text-muted mb-1.5">
+                Tibares de Cobre (TC)
+              </label>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAddCurrency('tc', -10)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -10
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('tc', -1)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -1
+                </button>
+                <input
+                  type="number"
+                  value={editTC}
+                  onChange={(e) => setEditTC(e.target.value)}
+                  className="flex-1 px-2 py-1.5 text-sm bg-card-muted border border-stroke rounded text-center font-bold text-orange-700"
+                  min="0"
+                />
+                <button
+                  onClick={() => handleAddCurrency('tc', 1)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +1
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('tc', 10)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +10
+                </button>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="pt-2 border-t border-stroke">
+              <div className="text-center">
+                <div className="text-[10px] text-muted mb-0.5">Total em TP</div>
+                <div className="text-lg font-bold">
+                  {((parseInt(editTO) || 0) * 10 + (parseInt(editTP) || 0) + (parseInt(editTC) || 0) / 10).toFixed(1)} TP
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setCurrencyModalOpen(false)}
+                className="flex-1 px-3 py-1.5 text-sm bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveCurrencies}
+                className="flex-1 px-3 py-1.5 text-sm bg-accent text-card rounded hover:bg-accent-hover transition-colors font-semibold"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }

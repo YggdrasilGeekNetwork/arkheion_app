@@ -474,7 +474,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
           race: null,
           classes: [],
           attributeMethod: 'point-buy',
-          attributes: { FOR: 10, DES: 10, CON: 10, INT: 10, SAB: 10, CAR: 10 },
+          attributes: { FOR: 0, DES: 0, CON: 0, INT: 0, SAB: 0, CAR: 0 },
           deity: null,
           selectedPowers: [],
           trainedSkills: [],

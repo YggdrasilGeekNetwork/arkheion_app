@@ -707,6 +707,23 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
     }
   }
 
+  const handleToggleFavoriteSpell = async (spellId: string) => {
+    const updatedSpells = (character.spells || []).map(s =>
+      s.id === spellId ? { ...s, isFavorite: !s.isFavorite } : s
+    )
+    setIsUpdating(true)
+    try {
+      await optimisticDispatch({
+        type: 'UPDATE_SPELLS',
+        payload: updatedSpells,
+      })
+    } catch (error) {
+      console.error('Failed to toggle favorite spell:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   const handleUseAbility = async (ability: Ability) => {
     setIsUpdating(true)
     try {
@@ -859,6 +876,10 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           <AbilitiesTab
             character={character}
             onAddActiveEffect={handleAddActiveEffect}
+            onToggleFavoriteAbility={handleToggleFavoriteAbility}
+            onToggleFavoriteSpell={handleToggleFavoriteSpell}
+            onManaChange={handleManaChange}
+            onHealthChange={handleHealthChange}
           />
         )}
 
@@ -916,6 +937,7 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           onReorderFavorites={handleReorderFavorites}
           onToggleFavoriteAction={handleToggleFavoriteAction}
           onToggleFavoriteAbility={handleToggleFavoriteAbility}
+          onToggleFavoriteSpell={handleToggleFavoriteSpell}
           onSetWeaponModalOpen={setWeaponModalOpen}
           onAddWeapon={handleAddWeapon}
           onUpdateWeapon={handleUpdateWeapon}

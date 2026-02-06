@@ -10,7 +10,6 @@ import InitiativeCard from '../InitiativeCard'
 import SensesCard from '../SensesCard'
 import ProficienciesCard from '../ProficienciesCard'
 import EquippedItemsSummaryCard from '../EquippedItemsSummaryCard'
-import CurrencyCard from '../CurrencyCard'
 import ActiveEffectsSection from '../ActiveEffectsSection'
 
 type SummaryTabProps = {
@@ -94,6 +93,29 @@ export default function SummaryTab({
       <div className="h-px bg-stroke mb-[1vh]" />
 
       <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
+        <SkillsCard
+          skills={character.skills}
+          attributes={character.attributes}
+          classes={character.classes}
+          onSkillsChange={onSkillsChange}
+          mode="summary"
+        />
+
+        <ActiveEffectsSection
+          character={character}
+          activeEffects={activeEffects}
+          onClearEffect={onClearEffect}
+          onClearEffectsByDuration={onClearEffectsByDuration}
+          onClearAllEffects={onClearAllEffects}
+          alwaysShow={true}
+        />
+      </div>
+
+      {/* Separator */}
+      <div className="h-px bg-stroke mb-[1vh]" />
+
+      {/* Misc Info Section */}
+      <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
         <DefenseCard
           attributes={character.attributes}
           armor={2}
@@ -105,37 +127,21 @@ export default function SummaryTab({
           ]}
         />
 
-        <SkillsCard
-          skills={character.skills}
-          attributes={character.attributes}
-          classes={character.classes}
-          onSkillsChange={onSkillsChange}
-          mode="summary"
-        />
-      </div>
-
-      {/* Separator */}
-      <div className="h-px bg-stroke mb-[1vh]" />
-
-      {/* Misc Info Section */}
-      <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
-        <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help">
-          <div className="bg-card border border-stroke rounded-lg p-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-muted">Tamanho <span className="opacity-50">?</span></span>
-              <div className="flex items-center gap-1.5">
+        <div className="flex flex-col gap-[0.5vw]">
+          <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help flex-1">
+            <div className="bg-card border border-stroke rounded-lg p-1.5 h-full flex items-center">
+              <div className="flex items-center justify-between text-xs w-full">
+                <span className="font-semibold text-muted">Tamanho</span>
                 <span className="font-bold">Médio</span>
-                <span>|</span>
-                <span className="text-muted">+0/-0</span>
               </div>
             </div>
-          </div>
-        </Tooltip>
+          </Tooltip>
 
-        <div className="bg-card border border-stroke rounded-lg p-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-muted">Deslocamento</span>
-            <span className="font-bold">9m / 6q</span>
+          <div className="bg-card border border-stroke rounded-lg p-1.5 flex-1 flex items-center">
+            <div className="flex items-center justify-between text-xs w-full">
+              <span className="font-semibold text-muted">Desloc.</span>
+              <span className="font-bold">9m / 6q</span>
+            </div>
           </div>
         </div>
 

@@ -1,8 +1,10 @@
+import { useEffect } from 'react'
 import { useWizard } from '~/contexts/WizardContext'
 import { InlineChoiceResolver } from '../ChoiceResolver'
 
-function calculateModifier(value: number): number {
-  return Math.floor((value - 10) / 2)
+// In Tormenta 20, attributes ARE modifiers, so this is just for display formatting
+function formatModifier(value: number): string {
+  return value >= 0 ? `+${value}` : `${value}`
 }
 
 export default function SkillsStep() {
@@ -14,6 +16,29 @@ export default function SkillsStep() {
   const skillChoices = getChoicesForStep('skills')
   const totalLevel = getTotalLevel()
 
+  // Sync trainedSkills with resolved skill choices
+  // When a skill choice is resolved, those skills should automatically be trained
+  useEffect(() => {
+    const skillsFromChoices: string[] = []
+    skillChoices.forEach(choice => {
+      if (choice.isResolved) {
+        choice.selectedOptions.forEach(skill => {
+          if (!skillsFromChoices.includes(skill)) {
+            skillsFromChoices.push(skill)
+          }
+        })
+      }
+    })
+
+    // Only update if there's a difference
+    const sortedFromChoices = [...skillsFromChoices].sort()
+    const sortedTrainedSkills = [...trainedSkills].sort()
+
+    if (JSON.stringify(sortedFromChoices) !== JSON.stringify(sortedTrainedSkills)) {
+      dispatch({ type: 'SET_TRAINED_SKILLS', payload: skillsFromChoices })
+    }
+  }, [skillChoices, dispatch]) // Intentionally not including trainedSkills to avoid loops
+
   // Group skills by attribute
   const skillsByAttribute = allSkills.reduce((acc, skill) => {
     if (!acc[skill.attribute]) {
@@ -23,34 +48,31 @@ export default function SkillsStep() {
     return acc
   }, {} as Record<string, typeof allSkills>)
 
-  const getAttributeValue = (attr: string): number => {
-    const base = attributes[attr as keyof typeof attributes] || 10
+  // In Tormenta 20, attributes ARE modifiers, so we just get the final value
+  const getAttributeModifier = (attr: string): number => {
+    const base = attributes[attr as keyof typeof attributes] || 0
     const bonus = attributeBonuses.find(b => b.attribute === attr)?.value || 0
     return base + bonus
   }
 
   const getSkillModifier = (skill: typeof allSkills[0], isTrained: boolean): number => {
-    const attrValue = getAttributeValue(skill.attribute)
-    const attrMod = calculateModifier(attrValue)
+    // In Tormenta 20: Mod Atributo + Metade do Nível + Treinamento (+2) + Bônus
+    const attrMod = getAttributeModifier(skill.attribute)
     const halfLevel = Math.floor(totalLevel / 2)
-    const trainBonus = isTrained ? 2 : 0 // Simplified training bonus
+    const trainBonus = isTrained ? 2 : 0
     const skillBonus = skillBonuses.find(b => b.skill === skill.name)?.value || 0
 
     return attrMod + halfLevel + trainBonus + skillBonus
   }
 
-  const handleToggleSkill = (skillName: string) => {
-    dispatch({ type: 'TOGGLE_SKILL', payload: skillName })
-  }
-
-  // Calculate how many skills can still be trained based on choices
+  // Calculate training info from choices
   const getTrainingInfo = () => {
     let totalAllowed = 0
     let requiredFromChoices = 0
 
     skillChoices.forEach(choice => {
       if (choice.isResolved) {
-        totalAllowed += choice.selectedOptions.length
+        totalAllowed += choice.maxSelections
       } else {
         requiredFromChoices += choice.minSelections
       }
@@ -80,17 +102,24 @@ export default function SkillsStep() {
         <div className="flex items-center justify-between">
           <span className="font-medium">Perícias Treinadas</span>
           <span className={`font-bold ${
-            trainingInfo.currentlyTrained > trainingInfo.totalAllowed
-              ? 'text-red-500'
-              : 'text-accent'
+            trainingInfo.currentlyTrained === trainingInfo.totalAllowed
+              ? 'text-accent'
+              : trainingInfo.requiredFromChoices > 0
+              ? 'text-yellow-500'
+              : 'text-muted'
           }`}>
             {trainingInfo.currentlyTrained}
             {trainingInfo.totalAllowed > 0 && ` / ${trainingInfo.totalAllowed}`}
           </span>
         </div>
         {trainingInfo.requiredFromChoices > 0 && (
+          <p className="text-xs text-yellow-500 mt-1">
+            Escolha suas perícias abaixo para treinar.
+          </p>
+        )}
+        {skillChoices.length === 0 && (
           <p className="text-xs text-muted mt-1">
-            Resolva as escolhas abaixo para definir quais perícias podem ser treinadas.
+            Selecione uma classe para escolher perícias treinadas.
           </p>
         )}
       </div>
@@ -106,8 +135,8 @@ export default function SkillsStep() {
       {/* Skills by Attribute */}
       <div className="space-y-4">
         {Object.entries(skillsByAttribute).map(([attr, skills]) => {
-          const attrValue = getAttributeValue(attr)
-          const attrMod = calculateModifier(attrValue)
+          // In Tormenta 20, attributes ARE modifiers
+          const attrMod = getAttributeModifier(attr)
 
           return (
             <div key={attr} className="bg-card border border-stroke rounded-lg overflow-hidden">
@@ -115,7 +144,7 @@ export default function SkillsStep() {
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{attr}</span>
                   <span className={`text-sm ${attrMod >= 0 ? 'text-accent' : 'text-red-500'}`}>
-                    Mod: {attrMod >= 0 ? '+' : ''}{attrMod}
+                    Mod: {formatModifier(attrMod)}
                   </span>
                 </div>
               </div>
@@ -126,12 +155,6 @@ export default function SkillsStep() {
                   const totalMod = getSkillModifier(skill, isTrained)
                   const hasSkillBonus = skillBonuses.some(b => b.skill === skill.name)
 
-                  // Check if this skill is available from choices
-                  const isAvailableFromChoice = skillChoices.some(choice =>
-                    choice.isResolved && choice.selectedOptions.includes(skill.name)
-                  )
-                  const canTrain = isAvailableFromChoice || skillChoices.length === 0
-
                   return (
                     <div
                       key={skill.name}
@@ -139,16 +162,12 @@ export default function SkillsStep() {
                         isTrained ? 'bg-accent/5' : ''
                       }`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleToggleSkill(skill.name)}
-                        disabled={!canTrain && !isTrained}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      {/* Training indicator (read-only) */}
+                      <div
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                           isTrained
                             ? 'bg-accent border-accent'
-                            : canTrain
-                            ? 'border-stroke hover:border-accent'
-                            : 'border-stroke opacity-50 cursor-not-allowed'
+                            : 'border-stroke'
                         }`}
                       >
                         {isTrained && (
@@ -156,16 +175,21 @@ export default function SkillsStep() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
-                      </button>
+                      </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`font-medium ${isTrained ? 'text-accent' : ''}`}>
                             {skill.name}
                           </span>
-                          {hasSkillBonus && (
+                          {isTrained && (
                             <span className="text-xs bg-accent/20 text-accent px-1.5 py-0.5 rounded">
-                              Bônus
+                              Treinada
+                            </span>
+                          )}
+                          {hasSkillBonus && (
+                            <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">
+                              +Bônus
                             </span>
                           )}
                         </div>
@@ -187,8 +211,14 @@ export default function SkillsStep() {
       </div>
 
       {/* Formula explanation */}
-      <div className="bg-card-muted border border-stroke rounded-lg p-3 text-xs text-muted">
-        <strong>Cálculo do Modificador:</strong> Modificador do Atributo + Metade do Nível + Bônus de Treinamento (+2 se treinado) + Outros Bônus
+      <div className="bg-card-muted border border-stroke rounded-lg p-3 text-xs text-muted space-y-1">
+        <p>
+          <strong>Cálculo do Modificador:</strong> Mod. Atributo + Metade do Nível + Treinamento (+2) + Bônus
+        </p>
+        <p>
+          <strong>Nota:</strong> As perícias que você pode treinar são determinadas pela sua classe.
+          Selecione-as na seção de escolhas acima.
+        </p>
       </div>
     </div>
   )

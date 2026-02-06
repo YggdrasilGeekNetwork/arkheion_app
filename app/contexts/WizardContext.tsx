@@ -63,15 +63,15 @@ function validateAttributes(state: WizardState): string[] {
 
   if (attributeMethod === 'point-buy') {
     const pointCost = calculatePointBuyCost(attributes)
-    if (pointCost > 27) {
-      errors.push(`Você usou ${pointCost} pontos, mas só tem 27 disponíveis`)
+    if (pointCost > 10) {
+      errors.push(`Você usou ${pointCost} pontos, mas só tem 10 disponíveis`)
     }
   }
 
-  // Check all attributes are within valid range
+  // Check all attributes are within valid range for Tormenta 20 (-2 to 4)
   const attrValues = Object.values(attributes)
-  if (attrValues.some(v => v < 8 || v > 20)) {
-    errors.push('Atributos devem estar entre 8 e 20')
+  if (attrValues.some(v => v < -2 || v > 4)) {
+    errors.push('Atributos devem estar entre -2 e 4')
   }
 
   return errors
@@ -113,18 +113,43 @@ function validateEquipment(state: WizardState): string[] {
   return errors
 }
 
-// Point buy cost calculation
+function validateDeity(state: WizardState, loaderData: WizardLoaderData | null): string[] {
+  const errors: string[] = []
+
+  // Check if any selected class requires a deity
+  const allClasses = loaderData?.classes || []
+  const requiresDeityOrPantheon = state.data.classes.some(cls => {
+    const classData = allClasses.find(c => c.id === cls.id)
+    return classData?.abilities.some(
+      ability => ability.name.toLowerCase().includes('magia divina') ||
+                 ability.name.toLowerCase().includes('poder divino')
+    )
+  })
+
+  if (requiresDeityOrPantheon && !state.data.deity) {
+    errors.push('Sua classe requer que você escolha uma divindade ou seja devoto do Panteão')
+  }
+
+  return errors
+}
+
+// Tormenta 20 Point buy cost calculation
+// Costs: -1 = -1pt (gives back), 0 = 0pt, 1 = 1pt, 2 = 2pts, 3 = 4pts, 4 = 7pts
 function calculatePointBuyCost(attributes: AttributeValues): number {
   const costTable: Record<number, number> = {
-    8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9,
+    [-2]: -2, // Extremely low, gives 2 points back
+    [-1]: -1, // Low, gives 1 point back
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 4,
+    4: 7,
   }
 
   return Object.values(attributes).reduce((total, value) => {
-    // Values above 15 cost extra
-    if (value > 15) {
-      return total + 9 + (value - 15) * 2
-    }
-    return total + (costTable[value] || 0)
+    // Clamp value to valid range
+    const clampedValue = Math.max(-2, Math.min(4, value))
+    return total + (costTable[clampedValue] ?? 0)
   }, 0)
 }
 
@@ -179,6 +204,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
       'race': [],
       'class': [],
       'attributes': [],
+      'deity': [],
       'skills': [],
       'abilities': [],
       'equipment': [],
@@ -188,11 +214,12 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
       name: '',
       imageUrl: '',
       deity: null,
+      selectedPowers: [],
       origin: null,
       race: null,
       classes: [],
       attributeMethod: 'point-buy',
-      attributes: { FOR: 10, DES: 10, CON: 10, INT: 10, SAB: 10, CAR: 10 },
+      attributes: { FOR: 0, DES: 0, CON: 0, INT: 0, SAB: 0, CAR: 0 },
       trainedSkills: [],
       selectedAbilities: [],
       equipmentMethod: 'package',
@@ -217,6 +244,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
     'race',
     'class',
     'attributes',
+    'deity',
     'skills',
     'abilities',
     'equipment',
@@ -233,6 +261,8 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
         return validateClass(state)
       case 'attributes':
         return validateAttributes(state)
+      case 'deity':
+        return validateDeity(state, loaderData || null)
       case 'skills':
         return validateSkills(state)
       case 'abilities':
@@ -242,7 +272,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
       default:
         return []
     }
-  }, [state])
+  }, [state, loaderData])
 
   const validateCurrentStep = useCallback(() => {
     return validateStep(state.currentStep)
@@ -417,7 +447,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
   // Computed value helpers
   const getPointBuyRemaining = useCallback(() => {
     const used = calculatePointBuyCost(state.data.attributes)
-    return 27 - used
+    return 10 - used
   }, [state.data.attributes])
 
   const getTotalLevel = useCallback(() => {

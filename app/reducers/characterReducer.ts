@@ -1,4 +1,4 @@
-import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability } from '~/types/character'
+import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability, Spell } from '~/types/character'
 
 export type CharacterAction =
   | { type: 'SET_CHARACTER'; payload: Character }
@@ -19,6 +19,7 @@ export type CharacterAction =
   | { type: 'UPDATE_ACTIONS_LIST'; payload: CombatAction[] }
   | { type: 'UPDATE_WEAPONS'; payload: WeaponAttack[] }
   | { type: 'UPDATE_ABILITIES'; payload: Ability[] }
+  | { type: 'UPDATE_SPELLS'; payload: Spell[] }
   | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; update: Partial<Character> } }
   | { type: 'REVERT_OPTIMISTIC'; payload: string }
   | { type: 'CONFIRM_OPTIMISTIC'; payload: string }
@@ -260,6 +261,18 @@ export function characterReducer(state: CharacterState, action: CharacterAction)
         character: {
           ...state.character,
           abilities: action.payload,
+          version: state.character.version + 1,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+
+    case 'UPDATE_SPELLS':
+      if (!state.character) return state
+      return {
+        ...state,
+        character: {
+          ...state.character,
+          spells: action.payload,
           version: state.character.version + 1,
           updatedAt: new Date().toISOString(),
         },

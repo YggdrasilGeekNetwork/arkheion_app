@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { CombatAction } from '~/types/character'
+import type { CombatAction, Ability } from '~/types/character'
 import ActionItem from './ActionItem'
+import AbilityItem from './AbilityItem'
 
 type ActionSection = {
   id: string
@@ -19,14 +20,20 @@ const actionSections: ActionSection[] = [
 
 type ActionsCollapsibleProps = {
   actions: CombatAction[]
+  abilities?: Ability[]
   onUseAction: (action: CombatAction) => void
+  onUseAbility?: (ability: Ability) => void
   onToggleFavorite: (actionId: string) => void
+  onToggleFavoriteAbility?: (abilityId: string) => void
 }
 
 export default function ActionsCollapsible({
   actions,
+  abilities = [],
   onUseAction,
-  onToggleFavorite
+  onUseAbility,
+  onToggleFavorite,
+  onToggleFavoriteAbility,
 }: ActionsCollapsibleProps) {
   const [openSection, setOpenSection] = useState<string | null>(null)
 
@@ -38,13 +45,20 @@ export default function ActionsCollapsible({
     return actions.filter(a => a.type === type)
   }
 
+  const getAbilitiesForSection = (type: ActionSection['type']) => {
+    // Only include active abilities with matching actionType
+    return abilities.filter(a => a.type === 'active' && a.actionType === type)
+  }
+
   return (
     <div className="space-y-2">
       {actionSections.map((section) => {
         const sectionActions = getActionsForSection(section.type)
+        const sectionAbilities = getAbilitiesForSection(section.type)
+        const totalItems = sectionActions.length + sectionAbilities.length
         const isOpen = openSection === section.id
 
-        if (sectionActions.length === 0) {
+        if (totalItems === 0) {
           return null
         }
 
@@ -57,7 +71,7 @@ export default function ActionsCollapsible({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">{section.label}</span>
                 <span className="text-xs bg-card-muted px-2 py-0.5 rounded">
-                  {sectionActions.length}
+                  {totalItems}
                 </span>
               </div>
               <div className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
@@ -67,6 +81,7 @@ export default function ActionsCollapsible({
 
             {isOpen && (
               <div className="p-2 space-y-2">
+                {/* Actions */}
                 {sectionActions.map((action) => (
                   <ActionItem
                     key={action.id}
@@ -74,6 +89,17 @@ export default function ActionsCollapsible({
                     onUse={onUseAction}
                     onToggleFavorite={() => onToggleFavorite(action.id)}
                     showFavorite={true}
+                  />
+                ))}
+
+                {/* Abilities (integrated with actions, no separator) */}
+                {sectionAbilities.map((ability) => (
+                  <AbilityItem
+                    key={ability.id}
+                    ability={ability}
+                    onUse={onUseAbility}
+                    onToggleFavorite={onToggleFavoriteAbility ? () => onToggleFavoriteAbility(ability.id) : undefined}
+                    showFavorite={!!onToggleFavoriteAbility}
                   />
                 ))}
               </div>
