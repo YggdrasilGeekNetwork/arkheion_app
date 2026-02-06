@@ -366,6 +366,12 @@ export default function EquippedItemsSummaryCard({
               </label>
               <div className="flex items-center gap-1.5">
                 <button
+                  onClick={() => handleAddCurrency('to', -100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -100
+                </button>
+                <button
                   onClick={() => handleAddCurrency('to', -10)}
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
                 >
@@ -396,6 +402,12 @@ export default function EquippedItemsSummaryCard({
                 >
                   +10
                 </button>
+                <button
+                  onClick={() => handleAddCurrency('to', 100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +100
+                </button>
               </div>
             </div>
 
@@ -405,6 +417,12 @@ export default function EquippedItemsSummaryCard({
                 Tibares de Prata (TP)
               </label>
               <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAddCurrency('tp', -100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -100
+                </button>
                 <button
                   onClick={() => handleAddCurrency('tp', -10)}
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
@@ -436,6 +454,12 @@ export default function EquippedItemsSummaryCard({
                 >
                   +10
                 </button>
+                <button
+                  onClick={() => handleAddCurrency('tp', 100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +100
+                </button>
               </div>
             </div>
 
@@ -445,6 +469,12 @@ export default function EquippedItemsSummaryCard({
                 Tibares de Cobre (TC)
               </label>
               <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAddCurrency('tc', -100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  -100
+                </button>
                 <button
                   onClick={() => handleAddCurrency('tc', -10)}
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
@@ -475,6 +505,12 @@ export default function EquippedItemsSummaryCard({
                   className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
                 >
                   +10
+                </button>
+                <button
+                  onClick={() => handleAddCurrency('tc', 100)}
+                  className="px-2 py-1.5 text-xs bg-card-muted border border-stroke rounded hover:border-accent transition-colors"
+                >
+                  +100
                 </button>
               </div>
             </div>

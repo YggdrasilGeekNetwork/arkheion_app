@@ -26,7 +26,7 @@ const DefenseCard = ({ attributes, armor = 0, shield = 0, others = 0, othersDeta
           <select
             value={selectedAttr}
             onChange={(e) => setSelectedAttr(e.target.value)}
-            className="w-20 px-1 py-0.5 text-xs bg-btn-bg border border-stroke rounded"
+            className="w-15 px-1 py-0.5 text-xs bg-btn-bg border border-stroke rounded"
           >
             {attributes.map((attr) => (
               <option key={attr.label} value={attr.label}>

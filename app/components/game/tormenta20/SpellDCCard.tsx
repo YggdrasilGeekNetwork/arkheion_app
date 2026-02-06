@@ -24,7 +24,7 @@ const SpellDCCard = ({ attributes, hasSpells = true, proficiencyBonus = 2 }: Spe
           <select
             value={selectedAttr}
             onChange={(e) => setSelectedAttr(e.target.value)}
-            className="px-1.5 py-0.5 text-xs bg-btn-bg border border-stroke rounded leading-none"
+            className="px-1.5 py-0.5 text-xs bg-btn-bg border border-stroke rounded leading-none w-14"
           >
             {attributes.map((attr) => (
               <option key={attr.label} value={attr.label}>
@@ -32,7 +32,6 @@ const SpellDCCard = ({ attributes, hasSpells = true, proficiencyBonus = 2 }: Spe
               </option>
             ))}
           </select>
-          <span>|</span>
           <span className="font-bold">{totalDC}</span>
         </div>
       </div>

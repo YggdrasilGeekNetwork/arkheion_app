@@ -178,26 +178,18 @@ export default function SummaryTab({
       {/* Separator */}
       <div className="h-px bg-stroke mb-[1vh]" />
 
-      {/* Equipment and Currency Section */}
-      <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
+      {/* Equipment Section with inline currencies */}
+      <div className="mb-[1vh]">
         <EquippedItemsSummaryCard
           character={character}
           onEquippedItemsChange={onEquippedItemsChange}
           onBackpackChange={onBackpackChange}
           onUseConsumable={onUseConsumable}
           onCombatAction={onCombatAction}
+          currencies={character.currencies}
+          onCurrenciesChange={onCurrenciesChange}
         />
-        <CurrencyCard currencies={character.currencies} onCurrenciesChange={onCurrenciesChange} />
       </div>
-
-      {/* Active Effects Section */}
-      <ActiveEffectsSection
-        character={character}
-        activeEffects={activeEffects}
-        onClearEffect={onClearEffect}
-        onClearEffectsByDuration={onClearEffectsByDuration}
-        onClearAllEffects={onClearAllEffects}
-      />
     </>
   )
 }
