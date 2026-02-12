@@ -135,6 +135,15 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
               update = { weapons: action.payload }
               updateKey = `${state.character.id}-WEAPONS`
               break
+            case 'LEVEL_UP':
+              // Level up is a complex action, we'll send all the data
+              // The backend will need to process this specially
+              update = {
+                // This will be a special payload for the backend
+                // For now, we just trigger the reducer and let it handle the state
+              } as Partial<Character>
+              updateKey = `${state.character.id}-LEVEL_UP`
+              break
           }
 
           // Debounced backend update

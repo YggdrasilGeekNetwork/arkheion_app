@@ -19,6 +19,12 @@
     "@remix-run/node": "^2.15.3",
     "@remix-run/react": "^2.15.3",
     "@remix-run/serve": "^2.15.3",
+    "@tiptap/extension-image": "^3.19.0",
+    "@tiptap/extension-link": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.19.0",
+    "@tiptap/pm": "^3.19.0",
+    "@tiptap/react": "^3.19.0",
+    "@tiptap/starter-kit": "^3.19.0",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

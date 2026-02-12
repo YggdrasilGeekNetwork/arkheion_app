@@ -1,4 +1,6 @@
 import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability, Spell } from '~/types/character'
+import type { LevelUpData } from '~/types/levelup'
+import { getModifierFromValue } from '~/types/levelup'
 
 export type CharacterAction =
   | { type: 'SET_CHARACTER'; payload: Character }
@@ -20,6 +22,7 @@ export type CharacterAction =
   | { type: 'UPDATE_WEAPONS'; payload: WeaponAttack[] }
   | { type: 'UPDATE_ABILITIES'; payload: Ability[] }
   | { type: 'UPDATE_SPELLS'; payload: Spell[] }
+  | { type: 'LEVEL_UP'; payload: LevelUpData }
   | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; update: Partial<Character> } }
   | { type: 'REVERT_OPTIMISTIC'; payload: string }
   | { type: 'CONFIRM_OPTIMISTIC'; payload: string }
@@ -277,6 +280,78 @@ export function characterReducer(state: CharacterState, action: CharacterAction)
           updatedAt: new Date().toISOString(),
         },
       }
+
+    case 'LEVEL_UP': {
+      if (!state.character) return state
+      const levelUpData = action.payload
+
+      // Update classes
+      let updatedClasses = [...state.character.classes]
+      const existingClassIndex = updatedClasses.findIndex(c => c.name === levelUpData.className)
+      if (existingClassIndex >= 0) {
+        // Level up existing class
+        updatedClasses[existingClassIndex] = {
+          ...updatedClasses[existingClassIndex],
+          level: levelUpData.newLevel,
+        }
+      } else {
+        // Add new class (multiclass)
+        updatedClasses.push({
+          name: levelUpData.className,
+          level: levelUpData.newLevel,
+        })
+      }
+
+      // Update attributes if there's an attribute increase
+      let updatedAttributes = [...state.character.attributes]
+      if (levelUpData.attributeIncrease) {
+        updatedAttributes = updatedAttributes.map(attr => {
+          if (attr.label === levelUpData.attributeIncrease?.attribute) {
+            const newValue = attr.value + 1
+            return {
+              ...attr,
+              value: newValue,
+              modifier: getModifierFromValue(newValue),
+            }
+          }
+          return attr
+        })
+      }
+
+      // Update abilities
+      const updatedAbilities = [
+        ...(state.character.abilities || []),
+        ...levelUpData.newAbilities,
+      ]
+
+      // Update skills (mark new skills as trained)
+      let updatedSkills = [...state.character.skills]
+      if (levelUpData.newSkills.length > 0) {
+        updatedSkills = updatedSkills.map(skill => {
+          if (levelUpData.newSkills.includes(skill.name)) {
+            return { ...skill, trained: true }
+          }
+          return skill
+        })
+      }
+
+      return {
+        ...state,
+        character: {
+          ...state.character,
+          classes: updatedClasses,
+          maxHealth: state.character.maxHealth + levelUpData.hpGained,
+          health: state.character.health + levelUpData.hpGained, // Also heal for the new HP
+          maxMana: state.character.maxMana + levelUpData.mpGained,
+          mana: state.character.mana + levelUpData.mpGained, // Also restore new mana
+          attributes: updatedAttributes,
+          abilities: updatedAbilities,
+          skills: updatedSkills,
+          version: state.character.version + 1,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    }
 
     case 'OPTIMISTIC_UPDATE':
       if (!state.character) return state
