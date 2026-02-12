@@ -8,7 +8,9 @@ import { useDiceRoll } from '~/contexts/DiceRollContext'
 import { useCharacter } from '~/contexts/CharacterContext'
 import DiceRollDisplay from './DiceRollDisplay'
 import type { CombatAction, WeaponAttack, AvailableActions, ActiveEffect, EquipmentItem, Ability } from '~/types/character'
+import type { LevelUpData } from '~/types/levelup'
 import { getTotalLevel } from '~/utils/tormenta20'
+import LevelUpModal from './levelup/LevelUpModal'
 import SummaryTab from './tabs/SummaryTab'
 import CombatTab from './tabs/CombatTab'
 import AbilitiesTab from './tabs/AbilitiesTab'
@@ -132,6 +134,7 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
   const [weaponModalOpen, setWeaponModalOpen] = useState(false)
   const [choiceModalOpen, setChoiceModalOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<CombatAction | null>(null)
+  const [levelUpModalOpen, setLevelUpModalOpen] = useState(false)
 
   // On desktop, if summary is selected, show combat on the right
   const activeNavDesktop = activeNav === 'summary' ? 'combat' : activeNav
@@ -211,6 +214,21 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
       })
     } catch (error) {
       console.error('Failed to resurrect:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleLevelUp = async (data: LevelUpData) => {
+    setIsUpdating(true)
+    try {
+      await optimisticDispatch({
+        type: 'LEVEL_UP',
+        payload: data,
+      })
+      setLevelUpModalOpen(false)
+    } catch (error) {
+      console.error('Failed to level up:', error)
     } finally {
       setIsUpdating(false)
     }
@@ -793,6 +811,7 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
         origin={character.origin}
         deity={character.deity}
         onSettings={() => console.log('Settings')}
+        onLevelUp={() => setLevelUpModalOpen(true)}
       />
 
       <DiceRollDisplay />
@@ -964,6 +983,14 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           isFixed={false}
         />
       </div>
+
+      {/* Level Up Modal */}
+      <LevelUpModal
+        isOpen={levelUpModalOpen}
+        onClose={() => setLevelUpModalOpen(false)}
+        character={character}
+        onConfirm={handleLevelUp}
+      />
 
       {/* Combat Confirmation Modal */}
       <Modal

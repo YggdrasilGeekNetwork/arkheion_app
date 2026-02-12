@@ -5,9 +5,10 @@ type CharacterHeaderProps = {
   origin?: { name: string; tooltip?: string }
   deity?: { name: string; tooltip?: string }
   onSettings?: () => void
+  onLevelUp?: () => void
 }
 
-const CharacterHeader = ({ name, imageUrl, classes, origin, deity, onSettings }: CharacterHeaderProps) => {
+const CharacterHeader = ({ name, imageUrl, classes, origin, deity, onSettings, onLevelUp }: CharacterHeaderProps) => {
   const totalLevel = classes.reduce((sum, c) => sum + c.level, 0)
 
   return (
@@ -73,15 +74,31 @@ const CharacterHeader = ({ name, imageUrl, classes, origin, deity, onSettings }:
           </div>
         </div>
 
-        {/* Settings Button */}
-        <button
-          onClick={onSettings}
-          className="text-muted flex-shrink-0"
-          style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)' }}
-          aria-label="Settings"
-        >
-          ⚙️
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Level Up Button */}
+          {onLevelUp && (
+            <button
+              onClick={onLevelUp}
+              className="px-2 py-1 bg-accent text-card rounded hover:bg-accent-hover transition-colors font-semibold flex items-center gap-1"
+              style={{ fontSize: 'clamp(0.75rem, 3vw, 0.875rem)' }}
+              aria-label="Subir de Nível"
+            >
+              <span>⬆️</span>
+              <span className="hidden md:inline">Level Up</span>
+            </button>
+          )}
+
+          {/* Settings Button */}
+          <button
+            onClick={onSettings}
+            className="text-muted"
+            style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)' }}
+            aria-label="Settings"
+          >
+            ⚙️
+          </button>
+        </div>
       </div>
     </header>
   )
