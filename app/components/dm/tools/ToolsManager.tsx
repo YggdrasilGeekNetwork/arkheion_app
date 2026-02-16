@@ -43,11 +43,15 @@ export default function ToolsManager() {
         ))}
       </div>
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-hidden p-2">
-        {activeTab === 'rules' && <RulesTab />}
-        {activeTab === 'names' && <NameGeneratorTab />}
-        {activeTab === 'soundboard' && <SoundboardTab audioEngine={audioEngine} />}
+      {/* Tab content — soundboard always mounted so iframes persist */}
+      <div className={`flex-1 overflow-hidden p-2 ${activeTab === 'rules' ? '' : 'hidden'}`}>
+        <RulesTab />
+      </div>
+      <div className={`flex-1 overflow-hidden p-2 ${activeTab === 'names' ? '' : 'hidden'}`}>
+        <NameGeneratorTab />
+      </div>
+      <div className={`flex-1 overflow-hidden p-2 ${activeTab === 'soundboard' ? '' : 'hidden'}`}>
+        <SoundboardTab audioEngine={audioEngine} />
       </div>
     </div>
   )

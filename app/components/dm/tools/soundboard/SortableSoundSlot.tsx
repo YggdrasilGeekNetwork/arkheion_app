@@ -9,6 +9,7 @@ type SortableSoundSlotProps = {
   isPlaying: boolean
   volume: number
   activeVariantId?: string
+  editMode: boolean
   onToggle: () => void
   onVolumeChange: (vol: number) => void
   onRemove: () => void
@@ -16,7 +17,7 @@ type SortableSoundSlotProps = {
 }
 
 export default function SortableSoundSlot({
-  slot, sound, isPlaying, volume, activeVariantId,
+  slot, sound, isPlaying, volume, activeVariantId, editMode,
   onToggle, onVolumeChange, onRemove, onVariantChange,
 }: SortableSoundSlotProps) {
   const {
@@ -51,7 +52,7 @@ export default function SortableSoundSlot({
         onToggle={onToggle}
         onVolumeChange={onVolumeChange}
         onVariantChange={onVariantChange}
-        editMode
+        editMode={editMode}
         onRemove={onRemove}
       />
     </div>

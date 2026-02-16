@@ -40,8 +40,25 @@ export type RecentMediaEntry = {
   type: 'spotify' | 'youtube'
 }
 
+export type PlaylistDefinition = {
+  id: string
+  name: string
+  url: string
+  icon: string
+  type: 'spotify' | 'youtube'
+}
+
+export type PlaylistSlot = {
+  id: string
+  playlistId: string
+  isCustom: boolean
+  order: number
+}
+
 export type SoundboardConfig = {
   slots: SoundboardSlot[]
   customSounds: CustomSound[]
   recentMedia: RecentMediaEntry[]
+  playlistSlots: PlaylistSlot[]
+  customPlaylists: PlaylistDefinition[]
 }

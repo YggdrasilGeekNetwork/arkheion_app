@@ -1,4 +1,4 @@
-import type { SoundDefinition, SoundCategory, SoundboardSlot } from '~/types/soundboard'
+import type { SoundDefinition, SoundCategory, SoundboardSlot, PlaylistDefinition, PlaylistSlot } from '~/types/soundboard'
 export type { SoundCategory }
 
 export const SOUND_CATEGORIES: { id: SoundCategory; label: string; icon: string }[] = [
@@ -251,6 +251,23 @@ export const DEFAULT_SOUNDBOARD_SLOTS: SoundboardSlot[] = [
   { id: 'slot-explosion', soundId: 'explosion', isCustom: false, preferredVariantId: null, order: 10 },
   { id: 'slot-victory', soundId: 'victory', isCustom: false, preferredVariantId: null, order: 11 },
 ]
+
+// ─── Default playlists ───
+
+export const DEFAULT_PLAYLISTS: PlaylistDefinition[] = [
+  { id: 'pl-dungeons', name: 'Dungeons', url: 'https://open.spotify.com/playlist/0PpxhT3SeUQgFpzzMXyeqT', icon: '🏰', type: 'spotify' },
+  { id: 'pl-fantasmas', name: 'Fantasmas', url: 'https://open.spotify.com/playlist/4ElGdWyls20ADatBoOToSl', icon: '👻', type: 'spotify' },
+  { id: 'pl-fadas', name: 'Terra das Fadas', url: 'https://open.spotify.com/playlist/2ld5lC1zofTpjMnOFjme9Y', icon: '🧚', type: 'spotify' },
+  { id: 'pl-magicas', name: 'Regiões Mágicas', url: 'https://open.spotify.com/playlist/51QTSxVsH1B0LjlU8H7CEj', icon: '✨', type: 'spotify' },
+  { id: 'pl-mistico', name: 'Místico/Divino', url: 'https://open.spotify.com/playlist/3o77aL8wC3ej1EgxfsFUSe', icon: '🙏', type: 'spotify' },
+  { id: 'pl-tumbas', name: 'Tumbas/Cemitério', url: 'https://open.spotify.com/playlist/5sdofI41RcADPf55pONWvZ', icon: '⚰️', type: 'spotify' },
+  { id: 'pl-agua', name: 'Rios/Lagos', url: 'https://open.spotify.com/playlist/0l92iqcl2O5Syt8CFzisAq', icon: '🌊', type: 'spotify' },
+  { id: 'pl-chuva', name: 'Chuva', url: 'https://open.spotify.com/playlist/4XVEgAxa1XzeEqQuuCNCE6', icon: '🌧️', type: 'spotify' },
+  { id: 'pl-praia', name: 'Praia', url: 'https://open.spotify.com/playlist/20ZignT6kWa8UPoSqgz3S7', icon: '🏖️', type: 'spotify' },
+  { id: 'pl-cavernas', name: 'Cavernas/Esgotos', url: 'https://open.spotify.com/playlist/36EvsPJZGlc40Yc8Mv2xHX', icon: '🦇', type: 'spotify' },
+]
+
+export const DEFAULT_PLAYLIST_SLOTS: PlaylistSlot[] = []
 
 // Backward compat alias (used by old imports)
 export type SoundEffect = {

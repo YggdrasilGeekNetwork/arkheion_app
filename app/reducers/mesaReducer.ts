@@ -5,8 +5,8 @@ import type {
 } from '~/types/encounter'
 import type { MesaWithCharacters, PartySnapshotField } from '~/types/mesa'
 import type { Note, NoteFolder, NoteLink } from '~/types/notes'
-import type { SoundboardConfig, SoundboardSlot, CustomSound, RecentMediaEntry } from '~/types/soundboard'
-import { DEFAULT_SOUNDBOARD_SLOTS } from '~/data/soundEffects'
+import type { SoundboardConfig, SoundboardSlot, CustomSound, RecentMediaEntry, PlaylistSlot, PlaylistDefinition } from '~/types/soundboard'
+import { DEFAULT_SOUNDBOARD_SLOTS, DEFAULT_PLAYLIST_SLOTS } from '~/data/soundEffects'
 
 export type MesaAction =
   | { type: 'SET_MESA'; payload: MesaWithCharacters }
@@ -86,6 +86,11 @@ export type MesaAction =
   | { type: 'ADD_CUSTOM_SOUND'; payload: { sound: CustomSound } }
   | { type: 'REMOVE_CUSTOM_SOUND'; payload: { soundId: string } }
   | { type: 'ADD_RECENT_MEDIA'; payload: { media: RecentMediaEntry } }
+  // Playlists
+  | { type: 'ADD_PLAYLIST_SLOT'; payload: { slot: PlaylistSlot } }
+  | { type: 'REMOVE_PLAYLIST_SLOT'; payload: { slotId: string } }
+  | { type: 'ADD_CUSTOM_PLAYLIST'; payload: { playlist: PlaylistDefinition } }
+  | { type: 'REMOVE_CUSTOM_PLAYLIST'; payload: { playlistId: string } }
   // Navigation
   | { type: 'NAVIGATE_BACK' }
   | { type: 'NAVIGATE_TO_ENCOUNTER'; payload: { adventureId: string; sessionId: string; encounterId: string } }
@@ -483,6 +488,8 @@ export const initialState: MesaState = {
     slots: DEFAULT_SOUNDBOARD_SLOTS,
     customSounds: [],
     recentMedia: [],
+    playlistSlots: DEFAULT_PLAYLIST_SLOTS,
+    customPlaylists: [],
   },
   isLoading: false,
   error: null,
@@ -1189,6 +1196,45 @@ export function mesaReducer(state: MesaState, action: MesaAction): MesaState {
         },
       }
     }
+
+    // ── Playlists ──
+
+    case 'ADD_PLAYLIST_SLOT':
+      return {
+        ...state,
+        soundboard: {
+          ...state.soundboard,
+          playlistSlots: [...state.soundboard.playlistSlots, action.payload.slot],
+        },
+      }
+
+    case 'REMOVE_PLAYLIST_SLOT':
+      return {
+        ...state,
+        soundboard: {
+          ...state.soundboard,
+          playlistSlots: state.soundboard.playlistSlots.filter(s => s.id !== action.payload.slotId),
+        },
+      }
+
+    case 'ADD_CUSTOM_PLAYLIST':
+      return {
+        ...state,
+        soundboard: {
+          ...state.soundboard,
+          customPlaylists: [...state.soundboard.customPlaylists, action.payload.playlist],
+        },
+      }
+
+    case 'REMOVE_CUSTOM_PLAYLIST':
+      return {
+        ...state,
+        soundboard: {
+          ...state.soundboard,
+          customPlaylists: state.soundboard.customPlaylists.filter(p => p.id !== action.payload.playlistId),
+          playlistSlots: state.soundboard.playlistSlots.filter(s => !(s.isCustom && s.playlistId === action.payload.playlistId)),
+        },
+      }
 
     default:
       return state
