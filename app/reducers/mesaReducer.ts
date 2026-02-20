@@ -631,6 +631,7 @@ export function buildInitiativeOrder(
       maxPv: enemy.creature.pv,
       ca: enemy.creature.ca,
       isDefeated: enemy.currentPv <= 0,
+      creature: enemy.creature,
     })
   }
 

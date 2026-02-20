@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useMesa } from '~/contexts/MesaContext'
 import { useSocketContext } from '~/contexts/SocketContext'
-import { getActiveEncounter } from '~/reducers/mesaReducer'
 import type { InitiativeEntry } from '~/types/combat'
 import type { Creature } from '~/types/encounter'
+
 
 const TYPE_ICONS: Record<InitiativeEntry['type'], string> = {
   player: '🧑',
@@ -62,22 +62,27 @@ export default function InitiativeTracker() {
   }
 
   function updateEntry(entryId: string, updates: Partial<InitiativeEntry>) {
-    // Emit conditions change to the player's character sheet via socket
-    if (updates.conditions !== undefined && socket && state.mesa?.id) {
-      const entry = combatState?.initiativeOrder.find(e => e.id === entryId)
-      if (entry?.type === 'player') {
+    const entry = combatState?.initiativeOrder.find(e => e.id === entryId)
+    if (socket && state.mesa?.id && entry?.type === 'player') {
+      // Sync conditions to player's character sheet
+      if (updates.conditions !== undefined) {
         socket.emit('character:conditions:update', {
           mesaId: state.mesa.id,
           characterId: entry.sourceId,
           conditions: updates.conditions,
         })
       }
+      // Sync PV changes to player's character sheet
+      if (updates.currentPv !== undefined) {
+        socket.emit('character:health:update', {
+          mesaId: state.mesa.id,
+          characterId: entry.sourceId,
+          health: updates.currentPv,
+        })
+      }
     }
     dispatch({ type: 'UPDATE_COMBAT_ENTRY', payload: { entryId, updates } })
   }
-
-  // Look up full creature data for enemy entries
-  const currentEncounter = getActiveEncounter(state)
 
   return (
     <div className="flex-1 flex flex-col min-h-0 border-b border-stroke">
@@ -101,15 +106,12 @@ export default function InitiativeTracker() {
       {/* Initiative list */}
       <div className="flex-1 overflow-y-auto min-h-0 px-2 space-y-0.5">
         {combatState.initiativeOrder.map((entry, index) => {
-          const creature = entry.type === 'enemy'
-            ? currentEncounter?.enemies.find((e) => e.id === entry.sourceId)?.creature
-            : undefined
           return (
             <InitiativeRow
               key={entry.id}
               entry={entry}
               isCurrent={isInProgress && index === combatState.currentTurnIndex}
-              creature={creature}
+              creature={entry.creature}
               onSetInitiative={(value) => {
                 dispatch({ type: 'SET_INITIATIVE', payload: { entryId: entry.id, initiative: value } })
                 // Sync to player's character sheet if this is a player entry

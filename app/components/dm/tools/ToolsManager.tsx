@@ -1,8 +1,8 @@
 import { useState } from 'react'
+import { useAudioEngineContext } from '~/contexts/AudioEngineContext'
 import RulesTab from './RulesTab'
 import NameGeneratorTab from './NameGeneratorTab'
 import SoundboardTab from './SoundboardTab'
-import { useAudioEngine } from './soundboard/useAudioEngine'
 
 type ToolTab = 'rules' | 'names' | 'soundboard'
 
@@ -18,8 +18,8 @@ type ToolsManagerProps = {
 
 export default function ToolsManager({ compact = false }: ToolsManagerProps) {
   const [activeTab, setActiveTab] = useState<ToolTab>(compact ? 'soundboard' : 'rules')
-  // Audio engine lives here so it persists across tab switches
-  const audioEngine = useAudioEngine()
+  // Audio engine comes from context so it persists across combat ↔ dashboard switches
+  const audioEngine = useAudioEngineContext()
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

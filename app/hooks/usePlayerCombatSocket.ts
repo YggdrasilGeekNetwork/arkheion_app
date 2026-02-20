@@ -12,6 +12,7 @@ export function usePlayerCombatSocket(characterId: string, mesaId: string) {
   const [round, setRound] = useState(1)
   const [dmConditions, setDmConditions] = useState<string[]>([])
   const [dmInitiative, setDmInitiative] = useState<number | null>(null)
+  const [dmHealth, setDmHealth] = useState<number | null>(null)
 
   useEffect(() => {
     if (!socket) return
@@ -51,12 +52,18 @@ export function usePlayerCombatSocket(characterId: string, mesaId: string) {
       setDmInitiative(payload.initiative)
     }
 
+    function onHealthUpdate(payload: { characterId: string; health: number }) {
+      if (payload.characterId !== characterId) return
+      setDmHealth(payload.health)
+    }
+
     socket.on('combat:start', onCombatStart)
     socket.on('initiative:request', onInitiativeRequest)
     socket.on('turn:change', onTurnChange)
     socket.on('combat:end', onCombatEnd)
     socket.on('character:conditions:update', onConditionsUpdate)
     socket.on('character:initiative:update', onInitiativeUpdate)
+    socket.on('character:health:update', onHealthUpdate)
 
     // Request current combat state in case we joined mid-combat
     function requestSync() {
@@ -75,6 +82,7 @@ export function usePlayerCombatSocket(characterId: string, mesaId: string) {
       socket.off('combat:end', onCombatEnd)
       socket.off('character:conditions:update', onConditionsUpdate)
       socket.off('character:initiative:update', onInitiativeUpdate)
+      socket.off('character:health:update', onHealthUpdate)
       socket.off('connect', requestSync)
     }
   }, [socket, characterId, mesaId])
@@ -109,6 +117,7 @@ export function usePlayerCombatSocket(characterId: string, mesaId: string) {
     round,
     dmConditions,
     dmInitiative,
+    dmHealth,
     sendInitiativeRoll,
     sendTurnEnd,
   }

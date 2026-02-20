@@ -34,7 +34,7 @@ export default function CombatModeLayout({ mesaName, onBack, onShowDashboard, em
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left sidebar */}
-        <div className="w-[300px] flex-shrink-0 border-r border-stroke flex flex-col overflow-hidden bg-card">
+        <div className="w-[360px] flex-shrink-0 border-r border-stroke flex flex-col overflow-hidden bg-card">
           <CombatSidebarTools />
           <CombatSidebarEncounter />
           <InitiativeTracker />

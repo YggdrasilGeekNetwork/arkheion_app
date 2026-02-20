@@ -22,6 +22,8 @@ export type InitiativeEntry = {
   isDefeated: boolean
   conditions?: string[]
   availableActions?: CombatAvailableActions
+  // Stored at combat start for enemy/npc entries so lookup isn't needed at render time
+  creature?: import('~/types/encounter').Creature
 }
 
 export type CombatState = {

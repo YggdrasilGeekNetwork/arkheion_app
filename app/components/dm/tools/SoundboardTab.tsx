@@ -15,6 +15,7 @@ type SoundboardTabProps = {
 export default function SoundboardTab({ audioEngine, compact = false }: SoundboardTabProps) {
   const { state, dispatch } = useMesa()
   const [editMode, setEditMode] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null)
 
   const { slots, customSounds, playlistSlots, customPlaylists } = state.soundboard
@@ -105,6 +106,19 @@ export default function SoundboardTab({ audioEngine, compact = false }: Soundboa
     setActivePlaylistId(prev => prev === playlistId ? null : playlistId)
   }
 
+  const soundLibraryProps = {
+    customSounds,
+    boardSoundIds,
+    onAddToBoard: handleAddToBoard,
+    onAddCustomSound: handleAddCustomSound,
+    onRemoveCustomSound: handleRemoveCustomSound,
+    playlistSlots,
+    customPlaylists,
+    onAddPlaylistToBoard: handleAddPlaylistToBoard,
+    onAddCustomPlaylist: handleAddCustomPlaylist,
+    onRemoveCustomPlaylist: handleRemoveCustomPlaylist,
+  }
+
   return (
     <div className="flex flex-col h-full overflow-hidden gap-1.5">
       {/* Master controls */}
@@ -130,36 +144,23 @@ export default function SoundboardTab({ audioEngine, compact = false }: Soundboa
             Parar ({audioEngine.activeSounds.size})
           </button>
         )}
-        {!compact && (
-          <button
-            onClick={() => setEditMode(v => !v)}
-            className={`text-[11px] px-1.5 py-0.5 rounded transition-colors ${
-              editMode
-                ? 'bg-accent/20 text-accent border border-accent/40'
-                : 'text-muted hover:text-fg border border-stroke hover:border-accent/30'
-            }`}
-          >
-            {editMode ? 'Fechar' : 'Editar'}
-          </button>
-        )}
+        <button
+          onClick={() => compact ? setShowEditModal(true) : setEditMode(v => !v)}
+          className={`text-[11px] px-1.5 py-0.5 rounded transition-colors ${
+            editMode && !compact
+              ? 'bg-accent/20 text-accent border border-accent/40'
+              : 'text-muted hover:text-fg border border-stroke hover:border-accent/30'
+          }`}
+        >
+          {editMode && !compact ? 'Fechar' : 'Editar'}
+        </button>
       </div>
 
-      {/* Main content: library (when editing) + board */}
+      {/* Main content: library (when editing non-compact) + board */}
       <div className="flex-1 overflow-hidden flex gap-1.5 min-h-0">
-        {editMode && (
+        {editMode && !compact && (
           <div className="w-[30%] flex-shrink-0 overflow-hidden">
-            <SoundLibrary
-              customSounds={customSounds}
-              boardSoundIds={boardSoundIds}
-              onAddToBoard={handleAddToBoard}
-              onAddCustomSound={handleAddCustomSound}
-              onRemoveCustomSound={handleRemoveCustomSound}
-              playlistSlots={playlistSlots}
-              customPlaylists={customPlaylists}
-              onAddPlaylistToBoard={handleAddPlaylistToBoard}
-              onAddCustomPlaylist={handleAddCustomPlaylist}
-              onRemoveCustomPlaylist={handleRemoveCustomPlaylist}
-            />
+            <SoundLibrary {...soundLibraryProps} />
           </div>
         )}
 
@@ -187,6 +188,26 @@ export default function SoundboardTab({ audioEngine, compact = false }: Soundboa
             activeUrl={activePlaylistUrl}
             onClose={() => setActivePlaylistId(null)}
           />
+        </div>
+      )}
+
+      {/* Edit modal (compact/combat mode only) */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-card border border-stroke rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-xl">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-stroke flex-shrink-0">
+              <span className="text-sm font-semibold text-fg">Configurar Soundboard</span>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-muted hover:text-fg transition-colors text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3">
+              <SoundLibrary {...soundLibraryProps} />
+            </div>
+          </div>
         </div>
       )}
     </div>

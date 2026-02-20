@@ -74,6 +74,11 @@ io.on('connection', (socket) => {
     socket.to(payload.mesaId).emit('character:initiative:update', payload)
   })
 
+  // DM -> Player: HP changed in initiative tracker
+  socket.on('character:health:update', (payload) => {
+    socket.to(payload.mesaId).emit('character:health:update', payload)
+  })
+
   // Generic character update relay
   socket.on('character:update', (payload) => {
     socket.to(payload.mesaId).emit('character:update', payload)

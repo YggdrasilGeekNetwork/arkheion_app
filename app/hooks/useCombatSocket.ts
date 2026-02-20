@@ -60,16 +60,30 @@ export function useCombatSocket() {
       }
     }
 
+    function handleHealthUpdate(payload: { characterId: string; health: number }) {
+      const cs = combatStateRef.current
+      if (!cs) return
+      const entry = cs.initiativeOrder.find(e => e.type === 'player' && e.sourceId === payload.characterId)
+      if (entry) {
+        dispatch({
+          type: 'UPDATE_COMBAT_ENTRY',
+          payload: { entryId: entry.id, updates: { currentPv: payload.health } },
+        })
+      }
+    }
+
     socket.on('initiative:roll', handleInitiativeRoll)
     socket.on('turn:end', handleTurnEnd)
     socket.on('combat:sync:request', handleSyncRequest)
     socket.on('character:action:update', handleActionUpdate)
+    socket.on('character:health:update', handleHealthUpdate)
 
     return () => {
       socket.off('initiative:roll', handleInitiativeRoll)
       socket.off('turn:end', handleTurnEnd)
       socket.off('combat:sync:request', handleSyncRequest)
       socket.off('character:action:update', handleActionUpdate)
+      socket.off('character:health:update', handleHealthUpdate)
     }
   }, [socket, dispatch])
 

@@ -52,9 +52,13 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
     round,
     dmConditions,
     dmInitiative,
+    dmHealth,
     sendInitiativeRoll,
     sendTurnEnd,
   } = usePlayerCombatSocket(state.character?.id ?? '', mesaId ?? '')
+
+  // Track the last health value set by DM to avoid echoing it back
+  const dmHealthRef = useRef<number | null>(null)
 
   // Sync activeNav with URL on mount/URL change
   useEffect(() => {
@@ -170,6 +174,25 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
     if (dmInitiative === null) return
     optimisticDispatch({ type: 'UPDATE_INITIATIVE_ROLL', payload: dmInitiative })
   }, [dmInitiative])
+
+  // Apply DM-set health to character (tracker → sheet)
+  useEffect(() => {
+    if (dmHealth === null) return
+    dmHealthRef.current = dmHealth
+    optimisticDispatch({ type: 'UPDATE_HEALTH', payload: dmHealth })
+  }, [dmHealth])
+
+  // Sync health changes to DM tracker (sheet → tracker), skip if DM just set it
+  useEffect(() => {
+    const char = state.character
+    if (!socket || !char?.id || !mesaId || !combatActive) return
+    if (char.health === dmHealthRef.current) return
+    socket.emit('character:health:update', {
+      mesaId,
+      characterId: char.id,
+      health: char.health,
+    })
+  }, [state.character?.health, socket, mesaId, combatActive])
 
   // Sync available actions to DM initiative tracker when in combat
   useEffect(() => {
