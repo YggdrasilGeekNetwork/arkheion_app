@@ -25,6 +25,7 @@ type PersonalBoardProps = {
   activePlaylistId: string | null
   onPlaylistToggle: (playlistId: string) => void
   onRemovePlaylistSlot: (slotId: string) => void
+  compact?: boolean
 }
 
 function resolvePlaylist(
@@ -41,6 +42,7 @@ export default function PersonalBoard({
   onReorder, onRemoveSlot, onUpdateSlot,
   playlistSlots, customPlaylists, activePlaylistId,
   onPlaylistToggle, onRemovePlaylistSlot,
+  compact = false,
 }: PersonalBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -117,7 +119,7 @@ export default function PersonalBoard({
     )
   }
 
-  const gridCols = editMode ? 'grid-cols-4' : 'grid-cols-6'
+  const gridCols = compact ? 'grid-cols-3' : editMode ? 'grid-cols-4' : 'grid-cols-6'
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
@@ -131,8 +133,8 @@ export default function PersonalBoard({
           items={sortedSlots.map(s => s.id)}
           strategy={rectSortingStrategy}
         >
-          {/* Horizontal layout: Ambiência | Efeitos side by side */}
-          <div className="flex gap-3 min-h-0">
+          {/* Layout: side-by-side (normal) or stacked (compact) */}
+          <div className={compact ? 'space-y-2' : 'flex gap-3 min-h-0'}>
             {ambientSlots.length > 0 && (
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-muted/60 uppercase tracking-wider font-medium mb-1 px-0.5">
@@ -142,7 +144,7 @@ export default function PersonalBoard({
               </div>
             )}
 
-            {ambientSlots.length > 0 && effectSlots.length > 0 && (
+            {!compact && ambientSlots.length > 0 && effectSlots.length > 0 && (
               <div className="border-l border-stroke/40 self-stretch" />
             )}
 

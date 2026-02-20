@@ -26,6 +26,7 @@ type FavoritesSectionProps = {
   onUseAbility?: (ability: Ability) => void
   onRollDamage: (weapon: WeaponAttack) => void
   onReorderFavorites: (weapons: WeaponAttack[], actions: CombatAction[], abilities?: Ability[]) => void
+  isOutOfTurn?: boolean
 }
 
 type FavoriteItem = {
@@ -48,13 +49,14 @@ function isWeaponEquipped(weapon: WeaponAttack, equippedItems?: EquippedItems): 
 }
 
 // Sortable Item Component
-function SortableItem({ item, onUseAction, onUseWeapon, onUseAbility, onRollDamage, isDisabled }: {
+function SortableItem({ item, onUseAction, onUseWeapon, onUseAbility, onRollDamage, isDisabled, isOutOfTurn }: {
   item: FavoriteItem
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
   onUseAbility?: (ability: Ability) => void
   onRollDamage: (weapon: WeaponAttack) => void
   isDisabled?: boolean
+  isOutOfTurn?: boolean
 }) {
   const {
     attributes,
@@ -99,12 +101,14 @@ function SortableItem({ item, onUseAction, onUseWeapon, onUseAbility, onRollDama
             ability={item.data as Ability}
             onUse={onUseAbility || (() => {})}
             compact={true}
+            isOutOfTurn={isOutOfTurn}
           />
         ) : (
           <ActionItem
             action={item.data as CombatAction}
             onUse={onUseAction}
             compact={true}
+            isOutOfTurn={isOutOfTurn}
           />
         )}
       </div>
@@ -122,6 +126,7 @@ export default function FavoritesSection({
   onUseAbility,
   onRollDamage,
   onReorderFavorites,
+  isOutOfTurn = false,
 }: FavoritesSectionProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -244,6 +249,7 @@ export default function FavoritesSection({
                 onUseAbility={onUseAbility}
                 onRollDamage={onRollDamage}
                 isDisabled={item.type === 'weapon' && !isWeaponEquipped(item.data as WeaponAttack, equippedItems)}
+                isOutOfTurn={isOutOfTurn}
               />
             ))}
           </div>

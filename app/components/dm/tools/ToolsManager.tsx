@@ -12,8 +12,12 @@ const TOOL_TABS: { id: ToolTab; icon: string; label: string }[] = [
   { id: 'soundboard', icon: '🎵', label: 'Soundboard' },
 ]
 
-export default function ToolsManager() {
-  const [activeTab, setActiveTab] = useState<ToolTab>('rules')
+type ToolsManagerProps = {
+  compact?: boolean
+}
+
+export default function ToolsManager({ compact = false }: ToolsManagerProps) {
+  const [activeTab, setActiveTab] = useState<ToolTab>(compact ? 'soundboard' : 'rules')
   // Audio engine lives here so it persists across tab switches
   const audioEngine = useAudioEngine()
 
@@ -51,7 +55,7 @@ export default function ToolsManager() {
         <NameGeneratorTab />
       </div>
       <div className={`flex-1 overflow-hidden p-2 ${activeTab === 'soundboard' ? '' : 'hidden'}`}>
-        <SoundboardTab audioEngine={audioEngine} />
+        <SoundboardTab audioEngine={audioEngine} compact={compact} />
       </div>
     </div>
   )

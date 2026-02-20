@@ -25,6 +25,7 @@ type ActionsCollapsibleProps = {
   onUseAbility?: (ability: Ability) => void
   onToggleFavorite: (actionId: string) => void
   onToggleFavoriteAbility?: (abilityId: string) => void
+  isOutOfTurn?: boolean
 }
 
 export default function ActionsCollapsible({
@@ -34,6 +35,7 @@ export default function ActionsCollapsible({
   onUseAbility,
   onToggleFavorite,
   onToggleFavoriteAbility,
+  isOutOfTurn = false,
 }: ActionsCollapsibleProps) {
   const [openSection, setOpenSection] = useState<string | null>(null)
 
@@ -89,6 +91,7 @@ export default function ActionsCollapsible({
                     onUse={onUseAction}
                     onToggleFavorite={() => onToggleFavorite(action.id)}
                     showFavorite={true}
+                    isOutOfTurn={isOutOfTurn}
                   />
                 ))}
 
@@ -97,9 +100,10 @@ export default function ActionsCollapsible({
                   <AbilityItem
                     key={ability.id}
                     ability={ability}
-                    onUse={onUseAbility}
+                    onUse={onUseAbility ?? (() => {})}
                     onToggleFavorite={onToggleFavoriteAbility ? () => onToggleFavoriteAbility(ability.id) : undefined}
                     showFavorite={!!onToggleFavoriteAbility}
+                    isOutOfTurn={isOutOfTurn}
                   />
                 ))}
               </div>

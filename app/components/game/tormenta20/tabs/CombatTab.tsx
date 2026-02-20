@@ -22,6 +22,13 @@ type CombatTabProps = {
   onStartTurn: () => void
   onRollInitiative: (result: number) => void
   onToggleCombat: () => void
+  initiativeRequested?: boolean
+  initiativeRolledForDM?: boolean
+  combatActiveDM?: boolean
+  currentTurnName?: string | null
+  dmRound?: number
+  isMyTurnDM?: boolean
+  onEndTurn?: () => void
   onSkillsChange: (newSkills: Character['skills']) => void
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
@@ -66,6 +73,13 @@ export default function CombatTab({
   onToggleFavoriteWeapon,
   onSetChoiceModalOpen,
   onChoiceSelect,
+  initiativeRequested,
+  initiativeRolledForDM,
+  combatActiveDM,
+  currentTurnName,
+  dmRound,
+  isMyTurnDM,
+  onEndTurn,
 }: CombatTabProps) {
   return (
     <>
@@ -78,6 +92,13 @@ export default function CombatTab({
         isMyTurn={character.isMyTurn}
         inCombat={character.inCombat}
         onToggleCombat={onToggleCombat}
+        initiativeRequested={initiativeRequested}
+        initiativeRolledForDM={initiativeRolledForDM}
+        combatActiveDM={combatActiveDM}
+        currentTurnName={currentTurnName}
+        dmRound={dmRound}
+        isMyTurnDM={isMyTurnDM}
+        onEndTurn={onEndTurn}
       />
 
       {/* HP and MP */}
@@ -96,8 +117,8 @@ export default function CombatTab({
         />
       </div>
 
-      {/* Action Indicator - Only show in combat */}
-      {character.inCombat && (
+      {/* Action Indicator - Show in local combat or when it's player's DM-turn */}
+      {(character.inCombat || (combatActiveDM && isMyTurnDM)) && (
         <ActionIndicator availableActions={character.availableActions} />
       )}
 
@@ -134,6 +155,7 @@ export default function CombatTab({
         onUseAbility={onUseAbility}
         onRollDamage={onRollDamage}
         onReorderFavorites={onReorderFavorites}
+        isOutOfTurn={combatActiveDM && !isMyTurnDM}
       />
 
       {/* Actions Collapsible (includes abilities grouped by action type) */}
@@ -144,6 +166,7 @@ export default function CombatTab({
         onUseAbility={onUseAbility}
         onToggleFavorite={onToggleFavoriteAction}
         onToggleFavoriteAbility={onToggleFavoriteAbility}
+        isOutOfTurn={combatActiveDM && !isMyTurnDM}
       />
 
       {/* Manage Weapons Button */}

@@ -14,6 +14,13 @@ type CombatTabDesktopProps = {
   onStartTurn: () => void
   onRollInitiative: (result: number) => void
   onToggleCombat: () => void
+  initiativeRequested?: boolean
+  initiativeRolledForDM?: boolean
+  combatActiveDM?: boolean
+  currentTurnName?: string | null
+  dmRound?: number
+  isMyTurnDM?: boolean
+  onEndTurn?: () => void
   onUseAction: (action: CombatAction) => void
   onUseWeapon: (weapon: WeaponAttack) => void
   onUseAbility?: (ability: Ability) => void
@@ -52,6 +59,13 @@ export default function CombatTabDesktop({
   onToggleFavoriteWeapon,
   onSetChoiceModalOpen,
   onChoiceSelect,
+  initiativeRequested,
+  initiativeRolledForDM,
+  combatActiveDM,
+  currentTurnName,
+  dmRound,
+  isMyTurnDM,
+  onEndTurn,
 }: CombatTabDesktopProps) {
   return (
     <>
@@ -68,12 +82,19 @@ export default function CombatTabDesktop({
                 isMyTurn={character.isMyTurn}
                 inCombat={character.inCombat}
                 onToggleCombat={onToggleCombat}
+                initiativeRequested={initiativeRequested}
+                initiativeRolledForDM={initiativeRolledForDM}
+                combatActiveDM={combatActiveDM}
+                currentTurnName={currentTurnName}
+                dmRound={dmRound}
+                isMyTurnDM={isMyTurnDM}
+                onEndTurn={onEndTurn}
               />
             </td>
           </tr>
 
-          {/* Action Indicator Row - Only show in combat */}
-          {character.inCombat && (
+          {/* Action Indicator Row - Show in local combat or when it's player's DM-turn */}
+          {(character.inCombat || (combatActiveDM && isMyTurnDM)) && (
             <tr>
               <td className="p-0">
                 <ActionIndicator availableActions={character.availableActions} />
@@ -94,6 +115,7 @@ export default function CombatTabDesktop({
                 onUseAbility={onUseAbility}
                 onRollDamage={onRollDamage}
                 onReorderFavorites={onReorderFavorites}
+                isOutOfTurn={combatActiveDM && !isMyTurnDM}
               />
             </td>
           </tr>
@@ -116,6 +138,7 @@ export default function CombatTabDesktop({
                   onUseAbility={onUseAbility}
                   onToggleFavorite={onToggleFavoriteAction}
                   onToggleFavoriteAbility={onToggleFavoriteAbility}
+                  isOutOfTurn={combatActiveDM && !isMyTurnDM}
                 />
               </div>
             </td>

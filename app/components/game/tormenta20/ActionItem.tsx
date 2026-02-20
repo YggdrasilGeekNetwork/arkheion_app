@@ -8,9 +8,10 @@ type ActionItemProps = {
   compact?: boolean
   onToggleFavorite?: () => void
   showFavorite?: boolean
+  isOutOfTurn?: boolean
 }
 
-export default function ActionItem({ action, onUse, compact = false, onToggleFavorite, showFavorite = false }: ActionItemProps) {
+export default function ActionItem({ action, onUse, compact = false, onToggleFavorite, showFavorite = false, isOutOfTurn = false }: ActionItemProps) {
   const [showConfirm, setShowConfirm] = useState(false)
 
   const handleClick = () => {
@@ -40,13 +41,16 @@ export default function ActionItem({ action, onUse, compact = false, onToggleFav
   const isDisabled = action.usesPerTurn !== undefined &&
                      (action.usedThisTurn || 0) >= action.usesPerTurn
 
+  // Gray out when not player's turn, except for reactions and free actions (usable any time)
+  const isCardDimmed = isDisabled || (isOutOfTurn && action.type !== 'reaction' && action.type !== 'free')
+
   const usageText = action.usesPerTurn !== undefined
     ? `${action.usedThisTurn || 0}/${action.usesPerTurn}`
     : null
 
   const cardContent = (
     <div className={`bg-card-muted border border-stroke rounded-lg p-2 transition-colors relative ${
-      isDisabled ? 'opacity-50' : 'hover:border-accent'
+      isCardDimmed ? 'opacity-50' : 'hover:border-accent'
     }`}>
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex-1 min-w-0">

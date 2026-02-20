@@ -73,6 +73,13 @@ type DesktopViewProps = {
     duration?: string
     consumeOnAttack?: boolean
   }) => void
+  initiativeRequested?: boolean
+  initiativeRolledForDM?: boolean
+  combatActiveDM?: boolean
+  currentTurnName?: string | null
+  dmRound?: number
+  isMyTurnDM?: boolean
+  onEndTurn?: () => void
 }
 
 export default function DesktopView({
@@ -122,6 +129,13 @@ export default function DesktopView({
   onClearAllEffects,
   onCombatAction,
   onAddActiveEffect,
+  initiativeRequested,
+  initiativeRolledForDM,
+  combatActiveDM,
+  currentTurnName,
+  dmRound,
+  isMyTurnDM,
+  onEndTurn,
 }: DesktopViewProps) {
   return (
     <div className="hidden md:flex md:justify-center flex-1" style={{ height: '-webkit-fill-available' }}>
@@ -293,6 +307,13 @@ export default function DesktopView({
               onToggleFavoriteWeapon={onToggleFavoriteWeapon}
               onSetChoiceModalOpen={onSetChoiceModalOpen}
               onChoiceSelect={onChoiceSelect}
+              initiativeRequested={initiativeRequested}
+              initiativeRolledForDM={initiativeRolledForDM}
+              combatActiveDM={combatActiveDM}
+              currentTurnName={currentTurnName}
+              dmRound={dmRound}
+              isMyTurnDM={isMyTurnDM}
+              onEndTurn={onEndTurn}
               />
             </div>
           )}

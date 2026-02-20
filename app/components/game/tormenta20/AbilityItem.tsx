@@ -16,9 +16,10 @@ type AbilityItemProps = {
   compact?: boolean
   onToggleFavorite?: () => void
   showFavorite?: boolean
+  isOutOfTurn?: boolean
 }
 
-export default function AbilityItem({ ability, onUse, compact = false, onToggleFavorite, showFavorite = false }: AbilityItemProps) {
+export default function AbilityItem({ ability, onUse, compact = false, onToggleFavorite, showFavorite = false, isOutOfTurn = false }: AbilityItemProps) {
   const [showConfirm, setShowConfirm] = useState(false)
 
   const handleClick = () => {
@@ -44,8 +45,11 @@ export default function AbilityItem({ ability, onUse, compact = false, onToggleF
 
   const costText = getCostText()
 
+  // Gray out when not player's turn, except for reactions and free actions
+  const isCardDimmed = isOutOfTurn && ability.actionType !== 'reaction' && ability.actionType !== 'free'
+
   const cardContent = (
-    <div className="bg-card-muted border border-stroke rounded-lg p-2 transition-colors relative hover:border-accent">
+    <div className={`bg-card-muted border border-stroke rounded-lg p-2 transition-colors relative ${isCardDimmed ? 'opacity-50' : 'hover:border-accent'}`}>
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold">{ability.name}</div>

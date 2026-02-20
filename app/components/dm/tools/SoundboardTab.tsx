@@ -9,9 +9,10 @@ import MusicPlayer from './MusicPlayer'
 
 type SoundboardTabProps = {
   audioEngine: AudioEngine
+  compact?: boolean
 }
 
-export default function SoundboardTab({ audioEngine }: SoundboardTabProps) {
+export default function SoundboardTab({ audioEngine, compact = false }: SoundboardTabProps) {
   const { state, dispatch } = useMesa()
   const [editMode, setEditMode] = useState(false)
   const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null)
@@ -129,16 +130,18 @@ export default function SoundboardTab({ audioEngine }: SoundboardTabProps) {
             Parar ({audioEngine.activeSounds.size})
           </button>
         )}
-        <button
-          onClick={() => setEditMode(v => !v)}
-          className={`text-[11px] px-1.5 py-0.5 rounded transition-colors ${
-            editMode
-              ? 'bg-accent/20 text-accent border border-accent/40'
-              : 'text-muted hover:text-fg border border-stroke hover:border-accent/30'
-          }`}
-        >
-          {editMode ? 'Fechar' : 'Editar'}
-        </button>
+        {!compact && (
+          <button
+            onClick={() => setEditMode(v => !v)}
+            className={`text-[11px] px-1.5 py-0.5 rounded transition-colors ${
+              editMode
+                ? 'bg-accent/20 text-accent border border-accent/40'
+                : 'text-muted hover:text-fg border border-stroke hover:border-accent/30'
+            }`}
+          >
+            {editMode ? 'Fechar' : 'Editar'}
+          </button>
+        )}
       </div>
 
       {/* Main content: library (when editing) + board */}
@@ -173,6 +176,7 @@ export default function SoundboardTab({ audioEngine }: SoundboardTabProps) {
           activePlaylistId={activePlaylistId}
           onPlaylistToggle={handlePlaylistToggle}
           onRemovePlaylistSlot={handleRemovePlaylistSlot}
+          compact={compact}
         />
       </div>
 

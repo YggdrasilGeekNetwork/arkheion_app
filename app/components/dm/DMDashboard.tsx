@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { useMesa } from '~/contexts/MesaContext'
+import { useCombatSocket } from '~/hooks/useCombatSocket'
 import DMTopBar from './DMTopBar'
 import EncounterManager from './encounters/EncounterManager'
 import NotesManager from './notes/NotesManager'
 import PartySnapshot from './quadrants/PartySnapshot'
 import QuadrantContainer from './quadrants/QuadrantContainer'
 import ToolsManager from './tools/ToolsManager'
+import CombatModeLayout from './combat/CombatModeLayout'
 
 type DMDashboardProps = {
   onBack?: () => void
@@ -13,6 +16,10 @@ type DMDashboardProps = {
 export default function DMDashboard({ onBack }: DMDashboardProps) {
   const { state } = useMesa()
   const { mesa, isLoading } = state
+  const [showDashboard, setShowDashboard] = useState(false)
+
+  // Keep socket listeners active even when switching between combat and dashboard views
+  const { emitCombatEnd } = useCombatSocket()
 
   if (isLoading) {
     return (
@@ -36,9 +43,36 @@ export default function DMDashboard({ onBack }: DMDashboardProps) {
     )
   }
 
+  if (state.combatState && !showDashboard) {
+    return (
+      <CombatModeLayout
+        mesaName={mesa.name}
+        onBack={onBack}
+        onShowDashboard={() => setShowDashboard(true)}
+        emitCombatEnd={emitCombatEnd}
+      />
+    )
+  }
+
   return (
     <div className="w-full h-[100dvh] bg-bg flex flex-col">
       <DMTopBar mesaName={mesa.name} onBack={onBack} />
+
+      {/* Combat active banner */}
+      {state.combatState && showDashboard && (
+        <button
+          onClick={() => setShowDashboard(false)}
+          className="mx-2 px-3 py-1.5 bg-red-600/20 border border-red-500/40 rounded-lg
+            flex items-center justify-center gap-2 text-xs font-semibold text-red-300
+            hover:bg-red-600/30 transition-colors"
+        >
+          <span>⚔️</span>
+          <span>Combate em andamento — Rodada {state.combatState.round}</span>
+          <span className="text-[10px] bg-red-500/30 px-1.5 py-0.5 rounded-full">
+            Voltar ao Combate
+          </span>
+        </button>
+      )}
 
       {/* 2x2 Grid Dashboard */}
       <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-2 p-2 overflow-hidden">
@@ -59,7 +93,7 @@ export default function DMDashboard({ onBack }: DMDashboardProps) {
 
         {/* Bottom-Right Quadrant - Encounter Manager */}
         <QuadrantContainer title="Encontros" position="bottom-right">
-          <EncounterManager />
+          <EncounterManager onGoToCombat={() => setShowDashboard(false)} />
         </QuadrantContainer>
       </div>
     </div>

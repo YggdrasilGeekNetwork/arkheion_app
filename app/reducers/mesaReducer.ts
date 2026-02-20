@@ -6,6 +6,7 @@ import type {
 import type { MesaWithCharacters, PartySnapshotField } from '~/types/mesa'
 import type { Note, NoteFolder, NoteLink } from '~/types/notes'
 import type { SoundboardConfig, SoundboardSlot, CustomSound, RecentMediaEntry, PlaylistSlot, PlaylistDefinition } from '~/types/soundboard'
+import type { CombatState, InitiativeEntry } from '~/types/combat'
 import { DEFAULT_SOUNDBOARD_SLOTS, DEFAULT_PLAYLIST_SLOTS } from '~/data/soundEffects'
 
 export type MesaAction =
@@ -91,6 +92,16 @@ export type MesaAction =
   | { type: 'REMOVE_PLAYLIST_SLOT'; payload: { slotId: string } }
   | { type: 'ADD_CUSTOM_PLAYLIST'; payload: { playlist: PlaylistDefinition } }
   | { type: 'REMOVE_CUSTOM_PLAYLIST'; payload: { playlistId: string } }
+  // Combat
+  | { type: 'START_COMBAT'; payload: { encounterId: string; initiativeOrder: InitiativeEntry[] } }
+  | { type: 'END_COMBAT' }
+  | { type: 'SET_INITIATIVE'; payload: { entryId: string; initiative: number } }
+  | { type: 'NEXT_TURN' }
+  | { type: 'PREVIOUS_TURN' }
+  | { type: 'UPDATE_COMBAT_ENTRY'; payload: { entryId: string; updates: Partial<InitiativeEntry> } }
+  | { type: 'ADD_COMBAT_ENTRY'; payload: { entry: InitiativeEntry } }
+  | { type: 'REMOVE_COMBAT_ENTRY'; payload: { entryId: string } }
+  | { type: 'RESTORE_COMBAT'; payload: CombatState }
   // Navigation
   | { type: 'NAVIGATE_BACK' }
   | { type: 'NAVIGATE_TO_ENCOUNTER'; payload: { adventureId: string; sessionId: string; encounterId: string } }
@@ -103,6 +114,7 @@ export type MesaState = {
   activeAdventureId: string | null
   activeSessionId: string | null
   activeEncounterId: string | null
+  combatState: CombatState | null
   notes: Note[]
   noteFolders: NoteFolder[]
   activeNoteId: string | null
@@ -480,6 +492,7 @@ export const initialState: MesaState = {
   activeAdventureId: null,
   activeSessionId: null,
   activeEncounterId: null,
+  combatState: null,
   notes: DEMO_NOTES,
   noteFolders: DEMO_FOLDERS,
   activeNoteId: null,
@@ -593,6 +606,97 @@ function updateActiveCampaign(state: MesaState, updater: (c: Campaign) => Campai
       c.id !== activeCampaignId ? c : updater(c)
     ),
   }
+}
+
+// ---- Helpers de combate ----
+
+export function buildInitiativeOrder(
+  encounter: Encounter,
+  characters: Character[],
+  campaign: Campaign | undefined,
+): InitiativeEntry[] {
+  const entries: InitiativeEntry[] = []
+
+  // Inimigos: auto-roll d20 + mod DES
+  for (const enemy of encounter.enemies) {
+    const desMod = Math.floor((enemy.creature.attributes.des - 10) / 2)
+    const roll = Math.floor(Math.random() * 20) + 1 + desMod
+    entries.push({
+      id: `combat-enemy-${enemy.id}`,
+      name: enemy.nickname || enemy.creature.name,
+      type: 'enemy',
+      initiative: roll,
+      sourceId: enemy.id,
+      currentPv: enemy.currentPv,
+      maxPv: enemy.creature.pv,
+      ca: enemy.creature.ca,
+      isDefeated: enemy.currentPv <= 0,
+    })
+  }
+
+  // Jogadores: initiative pendente
+  for (const char of characters) {
+    entries.push({
+      id: `combat-player-${char.id}`,
+      name: char.name,
+      type: 'player',
+      initiative: null,
+      sourceId: char.id,
+      currentPv: char.health,
+      maxPv: char.maxHealth,
+      ca: char.defenses?.find(d => d.name === 'CA')?.value,
+      isDefeated: false,
+    })
+  }
+
+  // NPCs combatentes do encontro
+  for (const encNpc of encounter.encounterNpcs) {
+    const npc = campaign?.npcs?.find(n => n.id === encNpc.npcId)
+    if (!npc) continue
+    const version = npc.versions.find(v => v.id === encNpc.versionId)
+    if (!version?.creature) continue
+    const desMod = Math.floor((version.creature.attributes.des - 10) / 2)
+    const roll = Math.floor(Math.random() * 20) + 1 + desMod
+    entries.push({
+      id: `combat-npc-${encNpc.id}`,
+      name: npc.name,
+      type: 'npc',
+      initiative: roll,
+      sourceId: encNpc.id,
+      currentPv: encNpc.currentPv ?? version.creature.pv,
+      maxPv: version.creature.pv,
+      ca: version.creature.ca,
+      isDefeated: false,
+    })
+  }
+
+  return entries
+}
+
+function sortInitiativeOrder(entries: InitiativeEntry[]): InitiativeEntry[] {
+  return [...entries].sort((a, b) => {
+    const aInit = a.initiative ?? -999
+    const bInit = b.initiative ?? -999
+    if (bInit !== aInit) return bInit - aInit
+    // Empate: player > npc > enemy
+    const typePriority = { player: 0, npc: 1, enemy: 2 }
+    return typePriority[a.type] - typePriority[b.type]
+  })
+}
+
+function findNextAliveIndex(entries: InitiativeEntry[], fromIndex: number, direction: 1 | -1): { index: number; newRound: boolean } {
+  const len = entries.length
+  if (len === 0) return { index: 0, newRound: false }
+
+  let idx = fromIndex
+  let wrapped = false
+  for (let i = 0; i < len; i++) {
+    idx += direction
+    if (idx >= len) { idx = 0; wrapped = true }
+    if (idx < 0) { idx = len - 1; wrapped = true }
+    if (!entries[idx].isDefeated) return { index: idx, newRound: wrapped && direction === 1 }
+  }
+  return { index: fromIndex, newRound: false }
 }
 
 export function mesaReducer(state: MesaState, action: MesaAction): MesaState {
@@ -1235,6 +1339,140 @@ export function mesaReducer(state: MesaState, action: MesaAction): MesaState {
           playlistSlots: state.soundboard.playlistSlots.filter(s => !(s.isCustom && s.playlistId === action.payload.playlistId)),
         },
       }
+
+    // ── Combat ──
+
+    case 'START_COMBAT':
+      return {
+        ...state,
+        combatState: {
+          encounterId: action.payload.encounterId,
+          status: 'rolling_initiative',
+          round: 1,
+          currentTurnIndex: 0,
+          initiativeOrder: action.payload.initiativeOrder,
+        },
+      }
+
+    case 'END_COMBAT':
+      return { ...state, combatState: null }
+
+    case 'RESTORE_COMBAT': {
+      const payload = action.payload
+      // When transitioning to in_progress, ensure the first entry has actions set
+      if (payload.status === 'in_progress' && payload.initiativeOrder.length > 0) {
+        const first = payload.initiativeOrder[payload.currentTurnIndex]
+        if (first && !first.availableActions) {
+          return {
+            ...state,
+            combatState: {
+              ...payload,
+              initiativeOrder: payload.initiativeOrder.map((e, i) =>
+                i === payload.currentTurnIndex
+                  ? { ...e, availableActions: { standard: 1, movement: 1, free: 3 } }
+                  : e
+              ),
+            },
+          }
+        }
+      }
+      return { ...state, combatState: payload }
+    }
+
+    case 'SET_INITIATIVE': {
+      if (!state.combatState) return state
+      const updated = state.combatState.initiativeOrder.map(e =>
+        e.id === action.payload.entryId ? { ...e, initiative: action.payload.initiative } : e
+      )
+      const allSet = updated.every(e => e.initiative !== null)
+      const sorted = allSet ? sortInitiativeOrder(updated) : updated
+      return {
+        ...state,
+        combatState: {
+          ...state.combatState,
+          initiativeOrder: sorted,
+          status: allSet ? 'in_progress' : state.combatState.status,
+          currentTurnIndex: 0,
+        },
+      }
+    }
+
+    case 'NEXT_TURN': {
+      if (!state.combatState || state.combatState.status !== 'in_progress') return state
+      const { index, newRound } = findNextAliveIndex(
+        state.combatState.initiativeOrder,
+        state.combatState.currentTurnIndex,
+        1,
+      )
+      return {
+        ...state,
+        combatState: {
+          ...state.combatState,
+          currentTurnIndex: index,
+          round: newRound ? state.combatState.round + 1 : state.combatState.round,
+          initiativeOrder: state.combatState.initiativeOrder.map((e, i) =>
+            i === index ? { ...e, availableActions: { standard: 1, movement: 1, free: 3 } } : e
+          ),
+        },
+      }
+    }
+
+    case 'PREVIOUS_TURN': {
+      if (!state.combatState || state.combatState.status !== 'in_progress') return state
+      const { index, newRound } = findNextAliveIndex(
+        state.combatState.initiativeOrder,
+        state.combatState.currentTurnIndex,
+        -1,
+      )
+      return {
+        ...state,
+        combatState: {
+          ...state.combatState,
+          currentTurnIndex: index,
+          round: newRound ? Math.max(1, state.combatState.round - 1) : state.combatState.round,
+        },
+      }
+    }
+
+    case 'UPDATE_COMBAT_ENTRY': {
+      if (!state.combatState) return state
+      return {
+        ...state,
+        combatState: {
+          ...state.combatState,
+          initiativeOrder: state.combatState.initiativeOrder.map(e =>
+            e.id === action.payload.entryId ? { ...e, ...action.payload.updates } : e
+          ),
+        },
+      }
+    }
+
+    case 'ADD_COMBAT_ENTRY': {
+      if (!state.combatState) return state
+      return {
+        ...state,
+        combatState: {
+          ...state.combatState,
+          initiativeOrder: sortInitiativeOrder([
+            ...state.combatState.initiativeOrder,
+            action.payload.entry,
+          ]),
+        },
+      }
+    }
+
+    case 'REMOVE_COMBAT_ENTRY': {
+      if (!state.combatState) return state
+      const filtered = state.combatState.initiativeOrder.filter(e => e.id !== action.payload.entryId)
+      return {
+        ...state,
+        combatState: {
+          ...state.combatState,
+          initiativeOrder: filtered,
+          currentTurnIndex: Math.min(state.combatState.currentTurnIndex, Math.max(0, filtered.length - 1)),
+        },
+      }
+    }
 
     default:
       return state

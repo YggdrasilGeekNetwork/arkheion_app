@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from 'react'
 import type { EncounterTab } from '~/types/encounter'
 import { useMesa } from '~/contexts/MesaContext'
-import { getActiveEncounter } from '~/reducers/mesaReducer'
+import { useSocketContext } from '~/contexts/SocketContext'
+import { getActiveEncounter, buildInitiativeOrder } from '~/reducers/mesaReducer'
 import HierarchyList from './navigation/HierarchyList'
 import HierarchySummary from './navigation/HierarchySummary'
 import EncounterBreadcrumb from './navigation/EncounterBreadcrumb'
@@ -22,8 +23,13 @@ import type { EncounterPath } from './utils/hierarchyHelpers'
 
 type AdventureView = 'sessions' | 'deck'
 
-export default function EncounterManager() {
+type EncounterManagerProps = {
+  onGoToCombat?: () => void
+}
+
+export default function EncounterManager({ onGoToCombat }: EncounterManagerProps = {}) {
   const { state, dispatch } = useMesa()
+  const { socket } = useSocketContext()
   const [activeTab, setActiveTab] = useState<EncounterTab>('enemies')
   const [adventureView, setAdventureView] = useState<AdventureView>('sessions')
 
@@ -245,9 +251,53 @@ export default function EncounterManager() {
   // Nível 5: Encontro ativo
   if (!activeEncounter) return null
 
+  const canStartCombat = activeEncounter.enemies.length > 0 && !state.combatState
+  const combatActiveForThisEncounter = state.combatState?.encounterId === activeEncounter.id
+
+  function handleStartCombat() {
+    if (!activeEncounter || !state.mesa) return
+    const initiativeOrder = buildInitiativeOrder(
+      activeEncounter,
+      state.mesa.characters,
+      activeCampaign,
+    )
+    dispatch({
+      type: 'START_COMBAT',
+      payload: { encounterId: activeEncounter.id, initiativeOrder },
+    })
+    // Notify players via socket
+    if (socket && state.mesa) {
+      socket.emit('combat:start', { mesaId: state.mesa.id, encounterId: activeEncounter.id })
+      socket.emit('initiative:request', { mesaId: state.mesa.id, encounterId: activeEncounter.id })
+    }
+  }
+
   return (
     <div className="h-full flex flex-col">
       <EncounterBreadcrumb />
+
+      {canStartCombat && (
+        <button
+          onClick={handleStartCombat}
+          className="mx-2 mb-2 px-4 py-2 bg-red-600 text-white rounded-lg
+            font-semibold hover:bg-red-700 transition-colors
+            flex items-center justify-center gap-2 text-sm"
+        >
+          <span>⚔️</span> Iniciar Combate
+        </button>
+      )}
+
+      {combatActiveForThisEncounter && onGoToCombat && (
+        <button
+          onClick={onGoToCombat}
+          className="mx-2 mb-2 px-4 py-2 bg-red-600/20 border border-red-500/40 text-red-300 rounded-lg
+            font-semibold hover:bg-red-600/30 transition-colors
+            flex items-center justify-center gap-2 text-sm animate-pulse"
+        >
+          <span>⚔️</span> Ir para Combate — Rodada {state.combatState?.round}
+        </button>
+      )}
+
       <EncounterBookmarks activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex-1 overflow-hidden p-2">

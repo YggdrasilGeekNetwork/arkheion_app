@@ -6,6 +6,8 @@ import BottomNavigation from './BottomNavigation'
 import { DiceRollProvider } from '~/contexts/DiceRollContext'
 import { useDiceRoll } from '~/contexts/DiceRollContext'
 import { useCharacter } from '~/contexts/CharacterContext'
+import { usePlayerCombatSocket } from '~/hooks/usePlayerCombatSocket'
+import { useSocketContext } from '~/contexts/SocketContext'
 import DiceRollDisplay from './DiceRollDisplay'
 import type { CombatAction, WeaponAttack, AvailableActions, ActiveEffect, EquipmentItem, Ability } from '~/types/character'
 import type { LevelUpData } from '~/types/levelup'
@@ -29,15 +31,30 @@ const ACTION_COST_LABELS: Record<string, string> = {
 
 type CharacterSheetInnerProps = {
   onBackToCharacters?: () => void
+  mesaId?: string
 }
 
-const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) => {
+const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInnerProps) => {
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab') || 'summary'
   const [activeNav, setActiveNav] = useState(tabFromUrl)
   const [isUpdating, setIsUpdating] = useState(false)
   const { state, optimisticDispatch } = useCharacter()
   const { addRoll } = useDiceRoll()
+  const { socket } = useSocketContext()
+
+  const {
+    combatActive,
+    initiativeRequested,
+    initiativeRolledForDM,
+    isMyTurn,
+    currentTurnName,
+    round,
+    dmConditions,
+    dmInitiative,
+    sendInitiativeRoll,
+    sendTurnEnd,
+  } = usePlayerCombatSocket(state.character?.id ?? '', mesaId ?? '')
 
   // Sync activeNav with URL on mount/URL change
   useEffect(() => {
@@ -56,6 +73,13 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
       window.history.pushState({}, '', newUrl.toString())
     }
   }, [activeNav])
+
+  // Auto-switch to combat tab when DM-initiated combat starts
+  useEffect(() => {
+    if (combatActive) {
+      setActiveNav('combat')
+    }
+  }, [combatActive])
 
   // For now, keep senses and proficiencies as local state since they're not in the Character type yet
   const [senses, setSenses] = useState([
@@ -125,6 +149,48 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
   ])
 
   const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([])
+
+  // Sync DM-assigned conditions to active effects
+  useEffect(() => {
+    setActiveEffects(prev => {
+      const withoutDm = prev.filter(e => e.source !== 'DM')
+      const dmEffects = dmConditions.map(c => ({
+        id: `dm-condition-${c}`,
+        name: c,
+        description: 'Condição aplicada pelo mestre',
+        source: 'DM',
+        type: 'active' as const,
+      }))
+      return [...withoutDm, ...dmEffects]
+    })
+  }, [dmConditions])
+
+  // Apply DM-set initiative to character
+  useEffect(() => {
+    if (dmInitiative === null) return
+    optimisticDispatch({ type: 'UPDATE_INITIATIVE_ROLL', payload: dmInitiative })
+  }, [dmInitiative])
+
+  // Sync available actions to DM initiative tracker when in combat
+  useEffect(() => {
+    const char = state.character
+    if (!socket || !char?.id || !mesaId || !combatActive) return
+    socket.emit('character:action:update', {
+      mesaId,
+      characterId: char.id,
+      availableActions: {
+        standard: char.availableActions.standard,
+        movement: char.availableActions.movement,
+        free: char.availableActions.free,
+      },
+    })
+  }, [
+    state.character?.availableActions?.standard,
+    state.character?.availableActions?.movement,
+    state.character?.availableActions?.free,
+    socket, mesaId, combatActive,
+  ])
+
   const [pendingCombatConfirmation, setPendingCombatConfirmation] = useState<{
     description: string
     actionCost: string
@@ -135,6 +201,7 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
   const [choiceModalOpen, setChoiceModalOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<CombatAction | null>(null)
   const [levelUpModalOpen, setLevelUpModalOpen] = useState(false)
+  const [manualInitiative, setManualInitiative] = useState('')
 
   // On desktop, if summary is selected, show combat on the right
   const activeNavDesktop = activeNav === 'summary' ? 'combat' : activeNav
@@ -400,19 +467,30 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
     setPendingCombatConfirmation(null)
   }
 
+  const handleEndTurn = () => {
+    if (mesaId) {
+      sendTurnEnd(mesaId)
+    }
+  }
+
   // Combat tab handlers
   const handleRollInitiative = async (result: number) => {
-    console.log('🎲 handleRollInitiative called with:', result)
-    console.log('📊 Current initiative:', character.initiativeRoll)
     setIsUpdating(true)
     try {
       await optimisticDispatch({
         type: 'UPDATE_INITIATIVE_ROLL',
         payload: result,
       })
-      console.log('✅ Initiative dispatch completed')
+      // Send initiative roll via socket to DM
+      if (mesaId && character.name) {
+        sendInitiativeRoll(result, character.name, mesaId)
+      }
+      // Auto-start combat if initiative was requested by DM
+      if (initiativeRequested && !character.inCombat) {
+        await optimisticDispatch({ type: 'TOGGLE_COMBAT', payload: true })
+      }
     } catch (error) {
-      console.error('❌ Failed to update initiative:', error)
+      console.error('Failed to update initiative:', error)
     } finally {
       setIsUpdating(false)
     }
@@ -816,6 +894,98 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
 
       <DiceRollDisplay />
 
+      {/* Combat active indicator */}
+      {combatActive && (
+        <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-red-600/15 border-b border-red-500/30">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-xs font-semibold text-red-400">
+            Combate em andamento
+          </span>
+          {round > 0 && (
+            <span className="text-[10px] text-red-300/70 bg-red-500/20 px-1.5 py-0.5 rounded-full">
+              Rodada {round}
+            </span>
+          )}
+          {isMyTurn && (
+            <span className="text-[10px] font-bold text-green-400 bg-green-500/20 px-1.5 py-0.5 rounded-full animate-pulse">
+              Seu turno!
+            </span>
+          )}
+          {!isMyTurn && currentTurnName && (
+            <span className="text-[10px] text-muted">
+              Turno de {currentTurnName}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Initiative Request Modal */}
+      <Modal
+        isOpen={initiativeRequested}
+        onClose={() => {}}
+        title="Iniciativa Solicitada"
+      >
+        <div className="space-y-4 text-center">
+          <div className="text-4xl">🎲</div>
+          <p className="text-sm text-muted">
+            O mestre pediu sua iniciativa! Role agora para entrar no combate.
+          </p>
+          <p className="text-xs text-muted">
+            Modificador: {(character.attributes.find(a => a.label === 'DES')?.modifier ?? 0) >= 0 ? '+' : ''}
+            {character.attributes.find(a => a.label === 'DES')?.modifier ?? 0}
+          </p>
+          <button
+            onClick={() => {
+              const desMod = character.attributes.find(a => a.label === 'DES')?.modifier ?? 0
+              const { total } = addRoll('Iniciativa (d20)', desMod, 20)
+              handleRollInitiative(total)
+              setManualInitiative('')
+              setActiveNav('combat')
+            }}
+            className="w-full py-3 bg-accent text-card rounded-lg font-bold text-base
+              hover:bg-accent-hover transition-colors"
+          >
+            Rolar Iniciativa
+          </button>
+          <div className="flex items-center gap-2 pt-2 border-t border-stroke">
+            <span className="text-xs text-muted whitespace-nowrap">Valor manual:</span>
+            <input
+              type="number"
+              value={manualInitiative}
+              onChange={e => setManualInitiative(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  const val = parseInt(manualInitiative)
+                  if (!isNaN(val)) {
+                    handleRollInitiative(val)
+                    setManualInitiative('')
+                    setActiveNav('combat')
+                  }
+                }
+              }}
+              placeholder="Ex: 17"
+              className="flex-1 px-3 py-1.5 bg-card-muted border border-stroke rounded text-sm
+                text-center font-bold focus:border-accent outline-none"
+            />
+            <button
+              onClick={() => {
+                const val = parseInt(manualInitiative)
+                if (!isNaN(val)) {
+                  handleRollInitiative(val)
+                  setManualInitiative('')
+                  setActiveNav('combat')
+                }
+              }}
+              disabled={manualInitiative === '' || isNaN(parseInt(manualInitiative))}
+              className="px-3 py-1.5 text-xs font-semibold bg-card-muted border border-stroke rounded
+                hover:border-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Loading Overlay */}
       {isUpdating && (
         <div className="absolute inset-0 bg-bg bg-opacity-50 flex items-center justify-center z-[90] pointer-events-none">
@@ -887,6 +1057,13 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
             onToggleFavoriteWeapon={handleToggleFavoriteWeapon}
             onSetChoiceModalOpen={setChoiceModalOpen}
             onChoiceSelect={handleChoiceSelect}
+            initiativeRequested={initiativeRequested}
+            initiativeRolledForDM={initiativeRolledForDM}
+            combatActiveDM={combatActive}
+            currentTurnName={currentTurnName}
+            dmRound={round}
+            isMyTurnDM={isMyTurn}
+            onEndTurn={handleEndTurn}
           />
         )}
 
@@ -971,6 +1148,13 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
           onClearAllEffects={handleClearAllEffects}
           onCombatAction={handleCombatAction}
           onAddActiveEffect={handleAddActiveEffect}
+          initiativeRequested={initiativeRequested}
+          initiativeRolledForDM={initiativeRolledForDM}
+          combatActiveDM={combatActive}
+          currentTurnName={currentTurnName}
+          dmRound={round}
+          isMyTurnDM={isMyTurn}
+          onEndTurn={handleEndTurn}
         />
       </div>
 
@@ -1047,11 +1231,12 @@ const CharacterSheetInner = ({ onBackToCharacters }: CharacterSheetInnerProps) =
 
 type CharacterSheetProps = {
   onBackToCharacters?: () => void
+  mesaId?: string
 }
 
-const CharacterSheet = ({ onBackToCharacters }: CharacterSheetProps) => (
+const CharacterSheet = ({ onBackToCharacters, mesaId }: CharacterSheetProps) => (
   <DiceRollProvider>
-    <CharacterSheetInner onBackToCharacters={onBackToCharacters} />
+    <CharacterSheetInner onBackToCharacters={onBackToCharacters} mesaId={mesaId} />
   </DiceRollProvider>
 )
 

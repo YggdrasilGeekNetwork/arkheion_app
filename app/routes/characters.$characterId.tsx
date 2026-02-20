@@ -4,6 +4,7 @@ import { json } from "@remix-run/node"
 import { useEffect } from "react"
 import { CharacterProvider, useCharacter } from "~/contexts/CharacterContext"
 import { ToastProvider } from "~/contexts/ToastContext"
+import { SocketProvider } from "~/contexts/SocketContext"
 import CharacterSheet from "~/components/game/tormenta20/CharacterSheet"
 import Toast from "~/components/ui/Toast"
 import OfflineWarning from "~/components/ui/OfflineWarning"
@@ -399,13 +400,14 @@ export async function loader({ params }: LoaderFunctionArgs) {
     version: 1,
   }
 
-  return json({ character: mockCharacter })
+  // TODO: In a real app, mesaId comes from the character's mesa association
+  return json({ character: mockCharacter, mesaId: 'mesa-1' })
 
   //return json({ character: result.data })
 }
 
 function CharacterSheetWrapper() {
-  const { character: loadedCharacter } = useLoaderData<typeof loader>()
+  const { character: loadedCharacter, mesaId } = useLoaderData<typeof loader>()
   const { dispatch } = useCharacter()
   const navigate = useNavigate()
 
@@ -423,17 +425,21 @@ function CharacterSheetWrapper() {
     <>
       <OfflineWarning />
       <Toast />
-      <CharacterSheet onBackToCharacters={handleBackToCharacters} />
+      <CharacterSheet onBackToCharacters={handleBackToCharacters} mesaId={mesaId} />
     </>
   )
 }
 
 export default function CharacterPage() {
+  const { mesaId } = useLoaderData<typeof loader>()
+
   return (
     <ToastProvider>
-      <CharacterProvider>
-        <CharacterSheetWrapper />
-      </CharacterProvider>
+      <SocketProvider mesaId={mesaId}>
+        <CharacterProvider>
+          <CharacterSheetWrapper />
+        </CharacterProvider>
+      </SocketProvider>
     </ToastProvider>
   )
 }

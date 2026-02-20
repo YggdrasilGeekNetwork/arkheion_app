@@ -4,6 +4,7 @@ import { json } from "@remix-run/node"
 import { useEffect } from "react"
 import { MesaProvider, useMesa } from "~/contexts/MesaContext"
 import { ToastProvider } from "~/contexts/ToastContext"
+import { SocketProvider } from "~/contexts/SocketContext"
 import DMDashboard from "~/components/dm/DMDashboard"
 import type { MesaWithCharacters } from "~/types/mesa"
 import type { Character } from "~/types/character"
@@ -87,7 +88,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     updatedAt: "2024-01-20T15:30:00Z",
     characters: [
       createMockCharacter({
-        id: "char-1",
+        id: "1",
         name: "Thorin Escudo de Ferro",
         imageUrl: "https://via.placeholder.com/150",
         classes: [
@@ -122,7 +123,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
         ],
       }),
       createMockCharacter({
-        id: "char-2",
+        id: "2",
         name: "Lyra Sombravento",
         imageUrl: "https://via.placeholder.com/150",
         classes: [{ name: "Ladino", level: 7 }],
@@ -154,7 +155,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
         ],
       }),
       createMockCharacter({
-        id: "char-3",
+        id: "3",
         name: "Alaric Flamejante",
         imageUrl: "https://via.placeholder.com/150",
         classes: [{ name: "Mago", level: 6 }, { name: "Arcanista", level: 2 }],
@@ -186,7 +187,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
         ],
       }),
       createMockCharacter({
-        id: "char-4",
+        id: "4",
         name: "Seraphina Luz Divina",
         imageUrl: "https://via.placeholder.com/150",
         classes: [{ name: "Clérigo", level: 8 }],
@@ -239,11 +240,15 @@ function DMDashboardWrapper() {
 }
 
 export default function MesaPage() {
+  const { mesa } = useLoaderData<typeof loader>()
+
   return (
     <ToastProvider>
-      <MesaProvider>
-        <DMDashboardWrapper />
-      </MesaProvider>
+      <SocketProvider mesaId={mesa.id}>
+        <MesaProvider>
+          <DMDashboardWrapper />
+        </MesaProvider>
+      </SocketProvider>
     </ToastProvider>
   )
 }
