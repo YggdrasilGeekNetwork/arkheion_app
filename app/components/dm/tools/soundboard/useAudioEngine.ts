@@ -18,11 +18,14 @@ export type AudioEngine = {
   getVolume: (soundId: string) => number
   getActiveVariantId: (soundId: string) => string | undefined
   masterVolume: number
+  activePlaylistId: string | null
+  setActivePlaylistId: (id: string | null) => void
 }
 
 export function useAudioEngine(): AudioEngine {
   const [activeSounds, setActiveSounds] = useState<Map<string, ActiveSound>>(new Map())
   const [masterVolume, setMasterVolumeState] = useState(0.7)
+  const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null)
   const activeSoundsRef = useRef(activeSounds)
   const masterVolumeRef = useRef(masterVolume)
   activeSoundsRef.current = activeSounds
@@ -130,5 +133,7 @@ export function useAudioEngine(): AudioEngine {
     setVolume, setMasterVolume,
     isPlaying, getVolume, getActiveVariantId,
     masterVolume,
+    activePlaylistId,
+    setActivePlaylistId,
   }
 }

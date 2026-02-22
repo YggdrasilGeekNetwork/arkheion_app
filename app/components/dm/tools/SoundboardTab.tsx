@@ -5,7 +5,6 @@ import type { AudioEngine } from './soundboard/useAudioEngine'
 import type { SoundboardSlot, CustomSound, PlaylistSlot, PlaylistDefinition } from '~/types/soundboard'
 import PersonalBoard from './soundboard/PersonalBoard'
 import SoundLibrary from './soundboard/SoundLibrary'
-import MusicPlayer from './MusicPlayer'
 
 type SoundboardTabProps = {
   audioEngine: AudioEngine
@@ -16,8 +15,8 @@ export default function SoundboardTab({ audioEngine, compact = false }: Soundboa
   const { state, dispatch } = useMesa()
   const [editMode, setEditMode] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null)
 
+  const { activePlaylistId, setActivePlaylistId } = audioEngine
   const { slots, customSounds, playlistSlots, customPlaylists } = state.soundboard
 
   const boardSoundIds = useMemo(
@@ -29,11 +28,6 @@ export default function SoundboardTab({ audioEngine, compact = false }: Soundboa
     () => [...DEFAULT_PLAYLISTS, ...customPlaylists],
     [customPlaylists]
   )
-
-  const activePlaylistUrl = useMemo(() => {
-    if (!activePlaylistId) return null
-    return allPlaylists.find(p => p.id === activePlaylistId)?.url ?? null
-  }, [activePlaylistId, allPlaylists])
 
   function handleAddToBoard(soundId: string, isCustom: boolean) {
     const maxOrder = slots.length > 0
@@ -103,7 +97,7 @@ export default function SoundboardTab({ audioEngine, compact = false }: Soundboa
   }
 
   function handlePlaylistToggle(playlistId: string) {
-    setActivePlaylistId(prev => prev === playlistId ? null : playlistId)
+    setActivePlaylistId(activePlaylistId === playlistId ? null : playlistId)
   }
 
   const soundLibraryProps = {
@@ -181,13 +175,19 @@ export default function SoundboardTab({ audioEngine, compact = false }: Soundboa
         />
       </div>
 
-      {/* Music player embed */}
-      {activePlaylistUrl && (
-        <div className="flex-shrink-0 border-t border-stroke pt-1.5">
-          <MusicPlayer
-            activeUrl={activePlaylistUrl}
-            onClose={() => setActivePlaylistId(null)}
-          />
+      {/* Now playing indicator — player itself lives in DMDashboard to survive view switches */}
+      {activePlaylistId && (
+        <div className="flex-shrink-0 border-t border-stroke pt-1.5 flex items-center gap-1.5 px-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+          <span className="text-[11px] text-muted flex-1 truncate">
+            {allPlaylists.find(p => p.id === activePlaylistId)?.name ?? 'Playlist'}
+          </span>
+          <button
+            onClick={() => setActivePlaylistId(null)}
+            className="text-[11px] text-muted hover:text-red-400 transition-colors"
+          >
+            ✕
+          </button>
         </div>
       )}
 

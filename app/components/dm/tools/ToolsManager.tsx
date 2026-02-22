@@ -17,9 +17,14 @@ type ToolsManagerProps = {
 }
 
 export default function ToolsManager({ compact = false }: ToolsManagerProps) {
-  const [activeTab, setActiveTab] = useState<ToolTab>(compact ? 'soundboard' : 'rules')
   // Audio engine comes from context so it persists across combat ↔ dashboard switches
   const audioEngine = useAudioEngineContext()
+
+  const [activeTab, setActiveTab] = useState<ToolTab>(() => {
+    if (compact) return 'soundboard'
+    if (audioEngine.activeSounds.size > 0 || audioEngine.activePlaylistId !== null) return 'soundboard'
+    return 'rules'
+  })
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -40,7 +45,7 @@ export default function ToolsManager({ compact = false }: ToolsManagerProps) {
           >
             <span>{tab.icon}</span>
             <span className="hidden sm:inline">{tab.label}</span>
-            {tab.id === 'soundboard' && audioEngine.activeSounds.size > 0 && (
+            {tab.id === 'soundboard' && (audioEngine.activeSounds.size > 0 || audioEngine.activePlaylistId !== null) && (
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             )}
           </button>
