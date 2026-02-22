@@ -1,5 +1,7 @@
-import { createContext, useContext, useReducer, useCallback, useMemo, type ReactNode } from 'react'
-import { wizardReducer, type WizardAction } from '~/reducers/wizardReducer'
+import { createContext, useContext, useCallback, useMemo, type ReactNode } from 'react'
+import { useAppDispatch, useAppSelector } from '~/store/hooks'
+import { wizardActions } from '~/store/slices/wizardSlice'
+import type { WizardAction } from '~/reducers/wizardReducer'
 import type {
   WizardState,
   WizardStep,
@@ -10,11 +12,9 @@ import type {
   EquipmentSelection,
   RaceData,
   ClassData,
-  OriginData,
   WizardLoaderData,
-  WIZARD_STEPS,
-  initialWizardState,
 } from '~/types/wizard'
+import { WIZARD_STEPS } from '~/types/wizard'
 
 // Helper functions for validation
 function validateBasicInfo(state: WizardState): string[] {
@@ -29,13 +29,8 @@ function validateBasicInfo(state: WizardState): string[] {
 
 function validateRace(state: WizardState): string[] {
   const errors: string[] = []
-  if (!state.data.race) {
-    errors.push('Selecione uma raça')
-  }
-  // Check if all race choices are resolved
-  const unresolvedRaceChoices = state.pendingChoices.filter(
-    c => c.sourceStep === 'race' && !c.isResolved
-  )
+  if (!state.data.race) errors.push('Selecione uma raça')
+  const unresolvedRaceChoices = state.pendingChoices.filter(c => c.sourceStep === 'race' && !c.isResolved)
   if (unresolvedRaceChoices.length > 0) {
     errors.push(`Resolva todas as escolhas de raça (${unresolvedRaceChoices.length} pendentes)`)
   }
@@ -44,122 +39,76 @@ function validateRace(state: WizardState): string[] {
 
 function validateClass(state: WizardState): string[] {
   const errors: string[] = []
-  if (state.data.classes.length === 0) {
-    errors.push('Selecione pelo menos uma classe')
-  }
-  // Check if all class choices are resolved
-  const unresolvedClassChoices = state.pendingChoices.filter(
-    c => c.sourceStep === 'class' && !c.isResolved
-  )
+  if (state.data.classes.length === 0) errors.push('Selecione pelo menos uma classe')
+  const unresolvedClassChoices = state.pendingChoices.filter(c => c.sourceStep === 'class' && !c.isResolved)
   if (unresolvedClassChoices.length > 0) {
     errors.push(`Resolva todas as escolhas de classe (${unresolvedClassChoices.length} pendentes)`)
   }
   return errors
 }
 
-function validateAttributes(state: WizardState): string[] {
-  const errors: string[] = []
-  const { attributes, attributeMethod } = state.data
-
-  if (attributeMethod === 'point-buy') {
-    const pointCost = calculatePointBuyCost(attributes)
-    if (pointCost > 10) {
-      errors.push(`Você usou ${pointCost} pontos, mas só tem 10 disponíveis`)
-    }
-  }
-
-  // Check all attributes are within valid range for Tormenta 20 (-2 to 4)
-  const attrValues = Object.values(attributes)
-  if (attrValues.some(v => v < -2 || v > 4)) {
-    errors.push('Atributos devem estar entre -2 e 4')
-  }
-
-  return errors
-}
-
-function validateSkills(state: WizardState): string[] {
-  const errors: string[] = []
-  // Check if all skill choices are resolved
-  const unresolvedSkillChoices = state.pendingChoices.filter(
-    c => c.sourceStep === 'skills' && !c.isResolved
-  )
-  if (unresolvedSkillChoices.length > 0) {
-    errors.push(`Resolva todas as escolhas de perícias (${unresolvedSkillChoices.length} pendentes)`)
-  }
-  return errors
-}
-
-function validateAbilities(state: WizardState): string[] {
-  const errors: string[] = []
-  // Check if all ability choices are resolved
-  const unresolvedAbilityChoices = state.pendingChoices.filter(
-    c => c.sourceStep === 'abilities' && !c.isResolved
-  )
-  if (unresolvedAbilityChoices.length > 0) {
-    errors.push(`Resolva todas as escolhas de habilidades (${unresolvedAbilityChoices.length} pendentes)`)
-  }
-  return errors
-}
-
-function validateEquipment(state: WizardState): string[] {
-  const errors: string[] = []
-  // Check if all equipment choices are resolved
-  const unresolvedEquipmentChoices = state.pendingChoices.filter(
-    c => c.sourceStep === 'equipment' && !c.isResolved
-  )
-  if (unresolvedEquipmentChoices.length > 0) {
-    errors.push(`Resolva todas as escolhas de equipamento (${unresolvedEquipmentChoices.length} pendentes)`)
-  }
-  return errors
-}
-
-function validateDeity(state: WizardState, loaderData: WizardLoaderData | null): string[] {
-  const errors: string[] = []
-
-  // Check if any selected class requires a deity
-  const allClasses = loaderData?.classes || []
-  const requiresDeityOrPantheon = state.data.classes.some(cls => {
-    const classData = allClasses.find(c => c.id === cls.id)
-    return classData?.abilities.some(
-      ability => ability.name.toLowerCase().includes('magia divina') ||
-                 ability.name.toLowerCase().includes('poder divino')
-    )
-  })
-
-  if (requiresDeityOrPantheon && !state.data.deity) {
-    errors.push('Sua classe requer que você escolha uma divindade ou seja devoto do Panteão')
-  }
-
-  return errors
-}
-
-// Tormenta 20 Point buy cost calculation
-// Costs: -1 = -1pt (gives back), 0 = 0pt, 1 = 1pt, 2 = 2pts, 3 = 4pts, 4 = 7pts
 function calculatePointBuyCost(attributes: AttributeValues): number {
-  const costTable: Record<number, number> = {
-    [-2]: -2, // Extremely low, gives 2 points back
-    [-1]: -1, // Low, gives 1 point back
-    0: 0,
-    1: 1,
-    2: 2,
-    3: 4,
-    4: 7,
-  }
-
+  const costTable: Record<number, number> = { [-2]: -2, [-1]: -1, 0: 0, 1: 1, 2: 2, 3: 4, 4: 7 }
   return Object.values(attributes).reduce((total, value) => {
-    // Clamp value to valid range
     const clampedValue = Math.max(-2, Math.min(4, value))
     return total + (costTable[clampedValue] ?? 0)
   }, 0)
 }
 
-// Context type
+function validateAttributes(state: WizardState): string[] {
+  const errors: string[] = []
+  const { attributes, attributeMethod } = state.data
+  if (attributeMethod === 'point-buy') {
+    const pointCost = calculatePointBuyCost(attributes)
+    if (pointCost > 10) errors.push(`Você usou ${pointCost} pontos, mas só tem 10 disponíveis`)
+  }
+  const attrValues = Object.values(attributes)
+  if (attrValues.some(v => v < -2 || v > 4)) errors.push('Atributos devem estar entre -2 e 4')
+  return errors
+}
+
+function validateSkills(state: WizardState): string[] {
+  const unresolvedSkillChoices = state.pendingChoices.filter(c => c.sourceStep === 'skills' && !c.isResolved)
+  return unresolvedSkillChoices.length > 0
+    ? [`Resolva todas as escolhas de perícias (${unresolvedSkillChoices.length} pendentes)`]
+    : []
+}
+
+function validateAbilities(state: WizardState): string[] {
+  const unresolvedAbilityChoices = state.pendingChoices.filter(c => c.sourceStep === 'abilities' && !c.isResolved)
+  return unresolvedAbilityChoices.length > 0
+    ? [`Resolva todas as escolhas de habilidades (${unresolvedAbilityChoices.length} pendentes)`]
+    : []
+}
+
+function validateEquipment(state: WizardState): string[] {
+  const unresolvedEquipmentChoices = state.pendingChoices.filter(c => c.sourceStep === 'equipment' && !c.isResolved)
+  return unresolvedEquipmentChoices.length > 0
+    ? [`Resolva todas as escolhas de equipamento (${unresolvedEquipmentChoices.length} pendentes)`]
+    : []
+}
+
+function validateDeity(state: WizardState, loaderData: WizardLoaderData | null): string[] {
+  const errors: string[] = []
+  const allClasses = loaderData?.classes || []
+  const requiresDeityOrPantheon = state.data.classes.some(cls => {
+    const classData = allClasses.find(c => c.id === cls.id)
+    return classData?.abilities.some(
+      ability =>
+        ability.name.toLowerCase().includes('magia divina') ||
+        ability.name.toLowerCase().includes('poder divino')
+    )
+  })
+  if (requiresDeityOrPantheon && !state.data.deity) {
+    errors.push('Sua classe requer que você escolha uma divindade ou seja devoto do Panteão')
+  }
+  return errors
+}
+
 type WizardContextType = {
   state: WizardState
-  dispatch: React.Dispatch<WizardAction>
+  dispatch: (action: WizardAction) => void
   loaderData: WizardLoaderData | null
-
-  // Navigation helpers
   goToStep: (step: WizardStep) => void
   nextStep: () => boolean
   previousStep: () => void
@@ -167,22 +116,14 @@ type WizardContextType = {
   canGoPrevious: () => boolean
   isLastStep: () => boolean
   isFirstStep: () => boolean
-
-  // Validation
   validateCurrentStep: () => string[]
   validateStep: (step: WizardStep) => string[]
-
-  // Choice helpers
   getChoicesForStep: (step: WizardStep) => PendingChoice[]
   hasUnresolvedChoices: (step: WizardStep) => boolean
   resolveChoice: (choiceId: string, selectedOptions: string[]) => void
-
-  // Data update helpers
   selectRace: (race: RaceSelection | null, raceData?: RaceData) => void
   addClass: (classData: ClassData, level?: number) => void
   removeClass: (classId: string) => void
-
-  // Computed values
   getPointBuyRemaining: () => number
   getTotalLevel: () => number
 }
@@ -195,82 +136,61 @@ type WizardProviderProps = {
 }
 
 export function WizardProvider({ children, loaderData }: WizardProviderProps) {
-  const [state, dispatch] = useReducer(wizardReducer, {
-    currentStep: 'basic-info',
-    completedSteps: [],
-    isSubmitting: false,
-    errors: {
-      'basic-info': [],
-      'race': [],
-      'class': [],
-      'attributes': [],
-      'deity': [],
-      'skills': [],
-      'abilities': [],
-      'equipment': [],
-    },
-    pendingChoices: [],
-    data: {
-      name: '',
-      imageUrl: '',
-      deity: null,
-      selectedPowers: [],
-      origin: null,
-      race: null,
-      classes: [],
-      attributeMethod: 'point-buy',
-      attributes: { FOR: 0, DES: 0, CON: 0, INT: 0, SAB: 0, CAR: 0 },
-      trainedSkills: [],
-      selectedAbilities: [],
-      equipmentMethod: 'package',
-      startingEquipment: { weapons: [], armor: [], items: [] },
-      currencies: { tc: 0, tp: 0, to: 0 },
-    },
-    computed: {
-      totalLevel: 0,
-      attributeBonuses: [],
-      skillBonuses: [],
-      grantedAbilities: [],
-      grantedProficiencies: [],
-      availableSkillPoints: 0,
-      usedSkillPoints: 0,
-      maxHealth: 0,
-      maxMana: 0,
-    },
-  })
+  const appDispatch = useAppDispatch()
+  const state = useAppSelector(s => s.wizard)
 
-  const STEPS: WizardStep[] = [
-    'basic-info',
-    'race',
-    'class',
-    'attributes',
-    'deity',
-    'skills',
-    'abilities',
-    'equipment',
-  ]
+  // Route WizardAction to Redux slice actions
+  const dispatch = useCallback((action: WizardAction) => {
+    switch (action.type) {
+      case 'SET_STEP': appDispatch(wizardActions.setStep(action.payload)); break
+      case 'NEXT_STEP': appDispatch(wizardActions.nextStep()); break
+      case 'PREVIOUS_STEP': appDispatch(wizardActions.previousStep()); break
+      case 'COMPLETE_STEP': appDispatch(wizardActions.completeStep(action.payload)); break
+      case 'UPDATE_NAME': appDispatch(wizardActions.updateName(action.payload)); break
+      case 'UPDATE_IMAGE_URL': appDispatch(wizardActions.updateImageUrl(action.payload)); break
+      case 'SELECT_ORIGIN': appDispatch(wizardActions.selectOrigin(action.payload)); break
+      case 'SELECT_DEITY': appDispatch(wizardActions.selectDeity(action.payload)); break
+      case 'TOGGLE_POWER': appDispatch(wizardActions.togglePower(action.payload)); break
+      case 'SET_SELECTED_POWERS': appDispatch(wizardActions.setSelectedPowers(action.payload)); break
+      case 'SELECT_RACE': appDispatch(wizardActions.selectRace(action.payload)); break
+      case 'SELECT_SUBRACE': appDispatch(wizardActions.selectSubrace(action.payload)); break
+      case 'ADD_CLASS': appDispatch(wizardActions.addClass(action.payload)); break
+      case 'REMOVE_CLASS': appDispatch(wizardActions.removeClass(action.payload)); break
+      case 'UPDATE_CLASS_LEVEL': appDispatch(wizardActions.updateClassLevel(action.payload)); break
+      case 'SELECT_ARCHETYPE': appDispatch(wizardActions.selectArchetype(action.payload)); break
+      case 'SET_ATTRIBUTE_METHOD': appDispatch(wizardActions.setAttributeMethod(action.payload)); break
+      case 'SET_ATTRIBUTES': appDispatch(wizardActions.setAttributes(action.payload)); break
+      case 'SET_SINGLE_ATTRIBUTE': appDispatch(wizardActions.setSingleAttribute(action.payload)); break
+      case 'TOGGLE_SKILL': appDispatch(wizardActions.toggleSkill(action.payload)); break
+      case 'SET_TRAINED_SKILLS': appDispatch(wizardActions.setTrainedSkills(action.payload)); break
+      case 'TOGGLE_ABILITY': appDispatch(wizardActions.toggleAbility(action.payload)); break
+      case 'SET_SELECTED_ABILITIES': appDispatch(wizardActions.setSelectedAbilities(action.payload)); break
+      case 'SET_EQUIPMENT_METHOD': appDispatch(wizardActions.setEquipmentMethod(action.payload)); break
+      case 'SET_STARTING_EQUIPMENT': appDispatch(wizardActions.setStartingEquipment(action.payload)); break
+      case 'SET_CURRENCIES': appDispatch(wizardActions.setCurrencies(action.payload)); break
+      case 'ADD_PENDING_CHOICES': appDispatch(wizardActions.addPendingChoices(action.payload)); break
+      case 'REMOVE_PENDING_CHOICES_BY_SOURCE': appDispatch(wizardActions.removePendingChoicesBySource(action.payload)); break
+      case 'RESOLVE_CHOICE': appDispatch(wizardActions.resolveChoice(action.payload)); break
+      case 'CLEAR_CHOICE': appDispatch(wizardActions.clearChoice(action.payload)); break
+      case 'SET_ERRORS': appDispatch(wizardActions.setErrors(action.payload)); break
+      case 'CLEAR_ERRORS': appDispatch(wizardActions.clearErrors(action.payload)); break
+      case 'UPDATE_COMPUTED': appDispatch(wizardActions.updateComputed(action.payload)); break
+      case 'SET_SUBMITTING': appDispatch(wizardActions.setSubmitting(action.payload)); break
+      case 'RESET_WIZARD': appDispatch(wizardActions.resetWizard()); break
+    }
+  }, [appDispatch])
 
-  // Validation functions
   const validateStep = useCallback((step: WizardStep): string[] => {
     switch (step) {
-      case 'basic-info':
-        return validateBasicInfo(state)
-      case 'race':
-        return validateRace(state)
-      case 'class':
-        return validateClass(state)
-      case 'attributes':
-        return validateAttributes(state)
-      case 'deity':
-        return validateDeity(state, loaderData || null)
-      case 'skills':
-        return validateSkills(state)
-      case 'abilities':
-        return validateAbilities(state)
-      case 'equipment':
-        return validateEquipment(state)
-      default:
-        return []
+      case 'basic-info': return validateBasicInfo(state)
+      case 'race': return validateRace(state)
+      case 'class': return validateClass(state)
+      case 'attributes': return validateAttributes(state)
+      case 'deity': return validateDeity(state, loaderData || null)
+      case 'skills': return validateSkills(state)
+      case 'abilities': return validateAbilities(state)
+      case 'equipment': return validateEquipment(state)
+      default: return []
     }
   }, [state, loaderData])
 
@@ -278,44 +198,41 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
     return validateStep(state.currentStep)
   }, [state.currentStep, validateStep])
 
-  // Navigation helpers
   const goToStep = useCallback((step: WizardStep) => {
-    dispatch({ type: 'SET_STEP', payload: step })
-  }, [])
+    appDispatch(wizardActions.setStep(step))
+  }, [appDispatch])
 
   const canGoNext = useCallback(() => {
-    const errors = validateCurrentStep()
-    return errors.length === 0
+    return validateCurrentStep().length === 0
   }, [validateCurrentStep])
 
   const canGoPrevious = useCallback(() => {
-    return STEPS.indexOf(state.currentStep) > 0
+    return WIZARD_STEPS.indexOf(state.currentStep) > 0
   }, [state.currentStep])
 
   const isLastStep = useCallback(() => {
-    return state.currentStep === STEPS[STEPS.length - 1]
+    return state.currentStep === WIZARD_STEPS[WIZARD_STEPS.length - 1]
   }, [state.currentStep])
 
   const isFirstStep = useCallback(() => {
-    return state.currentStep === STEPS[0]
+    return state.currentStep === WIZARD_STEPS[0]
   }, [state.currentStep])
 
   const nextStep = useCallback(() => {
     const errors = validateCurrentStep()
     if (errors.length > 0) {
-      dispatch({ type: 'SET_ERRORS', payload: { step: state.currentStep, errors } })
+      appDispatch(wizardActions.setErrors({ step: state.currentStep, errors }))
       return false
     }
-    dispatch({ type: 'CLEAR_ERRORS', payload: state.currentStep })
-    dispatch({ type: 'NEXT_STEP' })
+    appDispatch(wizardActions.clearErrors(state.currentStep))
+    appDispatch(wizardActions.nextStep())
     return true
-  }, [state.currentStep, validateCurrentStep])
+  }, [state.currentStep, validateCurrentStep, appDispatch])
 
   const previousStep = useCallback(() => {
-    dispatch({ type: 'PREVIOUS_STEP' })
-  }, [])
+    appDispatch(wizardActions.previousStep())
+  }, [appDispatch])
 
-  // Choice helpers
   const getChoicesForStep = useCallback((step: WizardStep) => {
     return state.pendingChoices.filter(c => c.sourceStep === step)
   }, [state.pendingChoices])
@@ -325,20 +242,16 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
   }, [state.pendingChoices])
 
   const resolveChoice = useCallback((choiceId: string, selectedOptions: string[]) => {
-    dispatch({ type: 'RESOLVE_CHOICE', payload: { choiceId, selectedOptions } })
-  }, [])
+    appDispatch(wizardActions.resolveChoice({ choiceId, selectedOptions }))
+  }, [appDispatch])
 
-  // Data update helpers with choice generation
   const selectRace = useCallback((race: RaceSelection | null, raceData?: RaceData) => {
-    // Remove old race choices
     if (state.data.race) {
-      dispatch({ type: 'REMOVE_PENDING_CHOICES_BY_SOURCE', payload: state.data.race.name })
+      appDispatch(wizardActions.removePendingChoicesBySource(state.data.race.name))
     }
+    appDispatch(wizardActions.selectRace(race))
 
-    dispatch({ type: 'SELECT_RACE', payload: race })
-
-    // Generate new choices from race data
-    if (race && raceData && raceData.choices) {
+    if (race && raceData?.choices) {
       const newChoices: PendingChoice[] = raceData.choices.map(choice => ({
         id: `${race.id}-${choice.id}`,
         type: choice.type,
@@ -352,33 +265,20 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
         selectedOptions: [],
         isResolved: false,
       }))
-      dispatch({ type: 'ADD_PENDING_CHOICES', payload: newChoices })
+      appDispatch(wizardActions.addPendingChoices(newChoices))
     }
 
-    // Update computed attribute bonuses
-    if (raceData && raceData.attributeBonuses) {
-      dispatch({
-        type: 'UPDATE_COMPUTED',
-        payload: {
-          attributeBonuses: raceData.attributeBonuses.map(b => ({
-            ...b,
-            source: race?.name || '',
-          })),
-        },
-      })
+    if (raceData?.attributeBonuses) {
+      appDispatch(wizardActions.updateComputed({
+        attributeBonuses: raceData.attributeBonuses.map(b => ({ ...b, source: race?.name || '' })),
+      }))
     }
-  }, [state.data.race])
+  }, [state.data.race, appDispatch])
 
   const addClass = useCallback((classData: ClassData, level: number = 1) => {
-    const classSelection: ClassSelection = {
-      id: classData.id,
-      name: classData.name,
-      level,
-    }
+    const classSelection: ClassSelection = { id: classData.id, name: classData.name, level }
+    appDispatch(wizardActions.addClass(classSelection))
 
-    dispatch({ type: 'ADD_CLASS', payload: classSelection })
-
-    // Generate skill choices from class
     if (classData.skillChoices) {
       const skillChoice: PendingChoice = {
         id: `${classData.id}-skills`,
@@ -387,19 +287,15 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
         sourceStep: 'skills',
         title: `Perícias de ${classData.name}`,
         description: `Escolha ${classData.skillChoices.count} perícias para treinar`,
-        options: classData.skillChoices.options.map(skill => ({
-          id: skill,
-          name: skill,
-        })),
+        options: classData.skillChoices.options.map(skill => ({ id: skill, name: skill })),
         minSelections: classData.skillChoices.count,
         maxSelections: classData.skillChoices.count,
         selectedOptions: [],
         isResolved: false,
       }
-      dispatch({ type: 'ADD_PENDING_CHOICES', payload: [skillChoice] })
+      appDispatch(wizardActions.addPendingChoices([skillChoice]))
     }
 
-    // Generate class-specific choices
     if (classData.choices) {
       const newChoices: PendingChoice[] = classData.choices
         .filter(choice => !choice.level || choice.level <= level)
@@ -416,38 +312,27 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
           selectedOptions: [],
           isResolved: false,
         }))
-      dispatch({ type: 'ADD_PENDING_CHOICES', payload: newChoices })
+      appDispatch(wizardActions.addPendingChoices(newChoices))
     }
 
-    // Update total level
     const newTotalLevel = state.data.classes.reduce((sum, c) => sum + c.level, 0) + level
-    dispatch({
-      type: 'UPDATE_COMPUTED',
-      payload: { totalLevel: newTotalLevel },
-    })
-  }, [state.data.classes])
+    appDispatch(wizardActions.updateComputed({ totalLevel: newTotalLevel }))
+  }, [state.data.classes, appDispatch])
 
   const removeClass = useCallback((classId: string) => {
     const classToRemove = state.data.classes.find(c => c.id === classId)
     if (classToRemove) {
-      dispatch({ type: 'REMOVE_PENDING_CHOICES_BY_SOURCE', payload: classToRemove.name })
-      dispatch({ type: 'REMOVE_CLASS', payload: classId })
-
-      // Update total level
+      appDispatch(wizardActions.removePendingChoicesBySource(classToRemove.name))
+      appDispatch(wizardActions.removeClass(classId))
       const newTotalLevel = state.data.classes
         .filter(c => c.id !== classId)
         .reduce((sum, c) => sum + c.level, 0)
-      dispatch({
-        type: 'UPDATE_COMPUTED',
-        payload: { totalLevel: newTotalLevel },
-      })
+      appDispatch(wizardActions.updateComputed({ totalLevel: newTotalLevel }))
     }
-  }, [state.data.classes])
+  }, [state.data.classes, appDispatch])
 
-  // Computed value helpers
   const getPointBuyRemaining = useCallback(() => {
-    const used = calculatePointBuyCost(state.data.attributes)
-    return 10 - used
+    return 10 - calculatePointBuyCost(state.data.attributes)
   }, [state.data.attributes])
 
   const getTotalLevel = useCallback(() => {
@@ -478,6 +363,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
   }), [
     state,
     loaderData,
+    dispatch,
     goToStep,
     nextStep,
     previousStep,
