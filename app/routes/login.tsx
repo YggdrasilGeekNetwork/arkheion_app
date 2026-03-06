@@ -1,13 +1,22 @@
 import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node"
 import { Form, Link, useActionData, useNavigation } from "@remix-run/react"
-import { redirect, json } from "@remix-run/node"
-import { login } from "~/utils/api"
+import { json } from "@remix-run/node"
+import { gqlRequest } from "~/utils/graphql.server"
+import { createUserSession } from "~/utils/session.server"
+import { LOGIN_MUTATION } from "~/graphql/auth"
 
 export const meta: MetaFunction = () => {
   return [
     { title: "Login - Arkheion" },
     { name: "description", content: "Faça login no Arkheion" },
   ]
+}
+
+interface LoginPayload {
+  user: { id: string; email: string; username: string; displayName: string | null }
+  accessToken: string | null
+  refreshToken: string | null
+  errors: string[] | null
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -19,14 +28,27 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "Email e senha são obrigatórios" }, { status: 400 })
   }
 
-  // MOCKED: Skip API call and redirect to characters
-  // const result = await login(email, password)
-  // if (result.error) {
-  //   return json({ error: result.error }, { status: 400 })
-  // }
+  const result = await gqlRequest<{ login: LoginPayload }>(LOGIN_MUTATION, { email, password })
 
-  // TODO: Set session/cookie with token
-  return redirect("/characters")
+  if (result.errors?.length) {
+    return json({ error: result.errors[0].message }, { status: 500 })
+  }
+
+  const payload = result.data?.login
+  if (payload?.errors?.length) {
+    return json({ error: payload.errors[0] }, { status: 400 })
+  }
+
+  if (!payload?.accessToken || !payload?.refreshToken) {
+    return json({ error: "Erro inesperado. Tente novamente." }, { status: 500 })
+  }
+
+  return createUserSession({
+    request,
+    accessToken: payload.accessToken,
+    refreshToken: payload.refreshToken,
+    redirectTo: "/characters",
+  })
 }
 
 export default function Login() {

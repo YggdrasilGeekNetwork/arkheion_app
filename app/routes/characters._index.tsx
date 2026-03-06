@@ -1,8 +1,10 @@
 import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node"
 import { Link, useLoaderData } from "@remix-run/react"
 import { json } from "@remix-run/node"
-import { getCharacters } from "~/utils/api"
 import type { CharacterSummary } from "~/types/character"
+import { requireUserToken } from "~/utils/session.server"
+import { gqlRequestOrLogout } from "~/utils/graphql.server"
+import { GET_CHARACTERS_QUERY } from "~/graphql/characters"
 
 export const meta: MetaFunction = () => {
   return [
@@ -12,38 +14,20 @@ export const meta: MetaFunction = () => {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  // TODO: Check authentication
+  const token = await requireUserToken(request)
 
-  // MOCKED: Always return mock data
-  return json({
-    characters: [
-      {
-        id: "1",
-        name: "Thorin Escudo de Ferro",
-        imageUrl: "https://via.placeholder.com/150",
-        classes: [
-          { name: "Guerreiro", level: 5 },
-          { name: "Paladino", level: 3 }
-        ],
-        level: 8
-      },
-      {
-        id: "2",
-        name: "Lyra Sombravento",
-        imageUrl: "https://via.placeholder.com/150",
-        classes: [
-          { name: "Ladino", level: 7 }
-        ],
-        level: 7
-      }
-    ] as CharacterSummary[]
-  })
+  const result = await gqlRequestOrLogout<{ characters: CharacterSummary[] }>(
+    request,
+    GET_CHARACTERS_QUERY,
+    {},
+    token,
+  )
 
-  // const result = await getCharacters()
-  // if (result.error) {
-  //   return json({ characters: [] })
-  // }
-  // return json({ characters: result.data || [] })
+  if (result.errors) {
+    console.error("[characters loader] GraphQL errors:", JSON.stringify(result.errors))
+  }
+
+  return json({ characters: result.data?.characters ?? [] })
 }
 
 export default function Characters() {

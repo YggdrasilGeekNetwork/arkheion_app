@@ -1,4 +1,5 @@
 import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
+import { requireUserToken } from '~/utils/session.server'
 import { useLoaderData, useNavigation, Form } from '@remix-run/react'
 import { WizardProvider } from '~/contexts/WizardContext'
 import CharacterCreationWizard from '~/components/wizard/CharacterCreationWizard'
@@ -523,6 +524,7 @@ const mockSkills = [
 ]
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  await requireUserToken(request)
   // TODO: Replace with actual API calls
   // const [racesResult, classesResult, deitiesResult, originsResult] = await Promise.all([
   //   getRaces(),

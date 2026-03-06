@@ -9,8 +9,7 @@ import {
   PURGE,
   REGISTER,
 } from 'redux-persist'
-import storage from 'redux-persist/lib/storage'
-
+import webStorage from 'redux-persist/lib/storage'
 import { uiReducer } from './slices/uiSlice'
 import { combatReducer } from './slices/combatSlice'
 import { soundboardReducer } from './slices/soundboardSlice'
@@ -21,20 +20,21 @@ import { characterReducer } from './slices/characterSlice'
 import { wizardReducer } from './slices/wizardSlice'
 import { combatPersistenceMiddleware } from './middleware/combatPersistence'
 
-// Persist soundboard and UI state to localStorage
-const persistedSoundboard = persistReducer(
-  { key: 'soundboard', storage, version: 1 },
-  soundboardReducer,
-)
-const persistedUi = persistReducer(
-  { key: 'ui', storage, version: 1 },
-  uiReducer,
-)
+// On the server (Remix SSR) localStorage doesn't exist.
+// The noop storage lets the store initialise without errors;
+// PersistGate handles rehydration from the real storage after hydration.
+const noopStorage = {
+  getItem: (_key: string) => Promise.resolve(null),
+  setItem: (_key: string, _value: string) => Promise.resolve(),
+  removeItem: (_key: string) => Promise.resolve(),
+}
+
+const storage = typeof window !== 'undefined' ? webStorage : noopStorage
 
 const rootReducer = combineReducers({
-  ui: persistedUi,
+  ui: persistReducer({ key: 'ui', storage, version: 1 }, uiReducer),
+  soundboard: persistReducer({ key: 'soundboard', storage, version: 1 }, soundboardReducer),
   combat: combatReducer,
-  soundboard: persistedSoundboard,
   mesa: mesaReducer,
   encounters: encountersReducer,
   notes: notesReducer,

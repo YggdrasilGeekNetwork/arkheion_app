@@ -1,7 +1,8 @@
-import type { MetaFunction } from "@remix-run/node"
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node"
 import { Link, useLoaderData } from "@remix-run/react"
 import { json } from "@remix-run/node"
 import type { MesaSummary } from "~/types/mesa"
+import { requireUserToken } from "~/utils/session.server"
 
 export const meta: MetaFunction = () => {
   return [
@@ -10,7 +11,8 @@ export const meta: MetaFunction = () => {
   ]
 }
 
-export async function loader() {
+export async function loader({ request }: LoaderFunctionArgs) {
+  await requireUserToken(request)
   // MOCKED: Return mock mesa list
   const mockMesas: MesaSummary[] = [
     {

@@ -1,4 +1,5 @@
 import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node"
+import { requireUserToken } from "~/utils/session.server"
 import { useLoaderData, useNavigate } from "@remix-run/react"
 import { json } from "@remix-run/node"
 import { useEffect } from "react"
@@ -71,7 +72,8 @@ const createMockCharacter = (overrides: Partial<Character> & { id: string; name:
   version: 1,
 })
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ params, request }: LoaderFunctionArgs) {
+  await requireUserToken(request)
   const mesaId = params.mesaId
 
   if (!mesaId) {

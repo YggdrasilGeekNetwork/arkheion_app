@@ -1,7 +1,9 @@
 import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node"
 import { Form, Link, useActionData, useNavigation } from "@remix-run/react"
-import { redirect, json } from "@remix-run/node"
-import { signup } from "~/utils/api"
+import { json } from "@remix-run/node"
+import { gqlRequest } from "~/utils/graphql.server"
+import { createUserSession } from "~/utils/session.server"
+import { REGISTER_MUTATION } from "~/graphql/auth"
 
 export const meta: MetaFunction = () => {
   return [
@@ -10,14 +12,25 @@ export const meta: MetaFunction = () => {
   ]
 }
 
+interface RegisterPayload {
+  user: { id: string; email: string; username: string; displayName: string | null }
+  accessToken: string | null
+  refreshToken: string | null
+  errors: string[] | null
+}
+
+/** Gera um username a partir do email (parte antes do @, sanitizada). */
+function usernameFromEmail(email: string): string {
+  return email.split("@")[0].replace(/[^a-z0-9]/gi, "_").toLowerCase()
+}
+
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData()
-  const name = formData.get("name") as string
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
 
-  if (!name || !email || !password || !confirmPassword) {
+  if (!email || !password || !confirmPassword) {
     return json({ error: "Todos os campos são obrigatórios" }, { status: 400 })
   }
 
@@ -29,14 +42,34 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "A senha deve ter pelo menos 6 caracteres" }, { status: 400 })
   }
 
-  // MOCKED: Skip API call and redirect to characters
-  // const result = await signup(email, password, name)
-  // if (result.error) {
-  //   return json({ error: result.error }, { status: 400 })
-  // }
+  const username = usernameFromEmail(email)
 
-  // TODO: Set session/cookie with token
-  return redirect("/characters")
+  const result = await gqlRequest<{ register: RegisterPayload }>(REGISTER_MUTATION, {
+    email,
+    username,
+    password,
+    passwordConfirmation: confirmPassword,
+  })
+
+  if (result.errors?.length) {
+    return json({ error: result.errors[0].message }, { status: 500 })
+  }
+
+  const payload = result.data?.register
+  if (payload?.errors?.length) {
+    return json({ error: payload.errors.join("; ") }, { status: 400 })
+  }
+
+  if (!payload?.accessToken || !payload?.refreshToken) {
+    return json({ error: "Erro inesperado. Tente novamente." }, { status: 500 })
+  }
+
+  return createUserSession({
+    request,
+    accessToken: payload.accessToken,
+    refreshToken: payload.refreshToken,
+    redirectTo: "/characters",
+  })
 }
 
 export default function Signup() {
@@ -53,20 +86,6 @@ export default function Signup() {
 
       <div className="bg-card border border-stroke rounded-lg p-6">
         <Form method="post" className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-semibold mb-1">
-              Nome
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              required
-              className="w-full px-3 py-2 bg-card-muted border border-stroke rounded focus:outline-none focus:border-accent"
-              placeholder="Seu nome"
-            />
-          </div>
-
           <div>
             <label htmlFor="email" className="block text-sm font-semibold mb-1">
               Email
