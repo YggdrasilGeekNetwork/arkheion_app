@@ -28,7 +28,12 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "Email e senha são obrigatórios" }, { status: 400 })
   }
 
-  const result = await gqlRequest<{ login: LoginPayload }>(LOGIN_MUTATION, { email, password })
+  let result: Awaited<ReturnType<typeof gqlRequest<{ login: LoginPayload }>>>
+  try {
+    result = await gqlRequest<{ login: LoginPayload }>(LOGIN_MUTATION, { email, password })
+  } catch {
+    return json({ error: "Serviço indisponível. Tente novamente mais tarde." }, { status: 503 })
+  }
 
   if (result.errors?.length) {
     return json({ error: result.errors[0].message }, { status: 500 })
