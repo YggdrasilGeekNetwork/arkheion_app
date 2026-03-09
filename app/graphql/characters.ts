@@ -22,11 +22,13 @@ export const GET_CHARACTER_QUERY = `
       origin { name tooltip }
       deity { name tooltip }
 
-      health maxHealth mana maxMana
+      health maxHealth mana maxMana size movement proficiencyBonus spellSaveDc spellcastingAttribute spellDcNotes spellDcTooltip
 
       attributes { label value modifier visible }
       resistances { name value tooltip visible }
       defenses { name value tooltip }
+      senses { name value tooltip }
+      proficiencies { name tooltip }
 
       inCombat initiativeRoll isMyTurn turnOrder
       availableActions { standard movement free full reaction }
@@ -84,6 +86,25 @@ export const GET_CHARACTER_QUERY = `
       currencies { tc tp to }
 
       updatedAt version
+    }
+  }
+`
+
+export const LEVEL_UP_CHARACTER_MUTATION = `
+  mutation LevelUpCharacter($id: ID!, $input: LevelUpCharacterInput!) {
+    levelUpCharacter(id: $id, input: $input) {
+      character { id version }
+      errors
+    }
+  }
+`
+
+export const GET_CLASS_POWERS_FOR_LEVEL_QUERY = `
+  query ClassPowersForLevel($classKey: String!, $level: Int!, $characterId: ID) {
+    classPowersForLevel(classKey: $classKey, level: $level, characterId: $characterId) {
+      powerChoices
+      fixedAbilities
+      selectablePowers { id name description type cost { pm pv } source }
     }
   }
 `

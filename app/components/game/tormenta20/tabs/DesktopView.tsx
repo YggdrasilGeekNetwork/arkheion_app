@@ -1,4 +1,18 @@
-import type { Character, Sense, Proficiency, CombatAction, WeaponAttack, EquippedItems, EquipmentItem, Currencies, ActiveEffect, Ability } from '~/types/character'
+import type { Character, CombatAction, WeaponAttack, EquippedItems, EquipmentItem, Currencies, ActiveEffect, Ability } from '~/types/character'
+
+const ATTR_ABBR: Record<string, string> = {
+  forca: 'FOR', destreza: 'DES', constituicao: 'CON',
+  inteligencia: 'INT', sabedoria: 'SAB', carisma: 'CAR',
+}
+
+const ATTR_TOOLTIP: Record<string, string> = {
+  forca: 'Sua capacidade de esmagar um tomate com as próprias mãos.',
+  destreza: 'Sua capacidade de arremessar um tomate com precisão ou desviar de um atirado em você.',
+  constituicao: 'Sua capacidade de comer um tomate podre ou mofado sem passar mal.',
+  inteligencia: 'Saber que um tomate é botanicamente classificado como uma fruta.',
+  sabedoria: 'O bom senso de saber que um tomate não pertence a uma salada de frutas.',
+  carisma: 'A habilidade de persuasão necessária para vender uma salada de frutas com tomate.',
+}
 
 type NavItem = { id: string; label: string }
 import Rollable from '../Rollable'
@@ -21,8 +35,6 @@ import CombatTabDesktop from './CombatTabDesktop'
 
 type DesktopViewProps = {
   character: Character
-  senses: Sense[]
-  proficiencies: Proficiency[]
   activeNavDesktop: string
   navItemsDesktop: NavItem[]
   weaponModalOpen: boolean
@@ -30,18 +42,17 @@ type DesktopViewProps = {
   pendingAction: CombatAction | null
   onHealthChange: (delta: number) => void
   onManaChange: (delta: number) => void
-  onSkillsChange: (newSkills: typeof character.skills) => void
+  onSkillsChange: (newSkills: Character['skills']) => void
   onBleedingRoll: () => Promise<void>
   onConRoll: () => void
   onRollInitiative: (result: number) => void
   onToggleCombat: () => void
   onSwitchToCombat: () => void
-  onSensesChange: (newSenses: Sense[]) => void
-  onProficienciesChange: (newProficiencies: Proficiency[]) => void
   onEquippedItemsChange: (newItems: EquippedItems) => void
   onBackpackChange: (newBackpack: (EquipmentItem | null)[]) => void
   onCurrenciesChange: (newCurrencies: Currencies) => void
-  onResistancesChange: (newResistances: typeof character.resistances) => void
+  onResistancesChange: (newResistances: Character['resistances']) => void
+  onNotesChange: (notes: string) => void
   onNavChange: (nav: string) => void
   onStartTurn: () => void
   onUseAction: (action: CombatAction) => void
@@ -84,8 +95,6 @@ type DesktopViewProps = {
 
 export default function DesktopView({
   character,
-  senses,
-  proficiencies,
   activeNavDesktop,
   navItemsDesktop,
   weaponModalOpen,
@@ -99,12 +108,11 @@ export default function DesktopView({
   onRollInitiative,
   onToggleCombat,
   onSwitchToCombat,
-  onSensesChange,
-  onProficienciesChange,
   onEquippedItemsChange,
   onBackpackChange,
   onCurrenciesChange,
   onResistancesChange,
+  onNotesChange,
   onNavChange,
   onStartTurn,
   onUseAction,
@@ -145,8 +153,8 @@ export default function DesktopView({
           {/* Attributes Section */}
           <div className="grid grid-cols-6 gap-1.5 mb-2">
             {character.attributes.map((attr) => (
-              <div key={attr.label} className="flex flex-col items-center justify-center bg-card border border-stroke rounded-lg p-2">
-                <div className="text-sm font-semibold text-muted">{attr.label}</div>
+              <div key={attr.label} title={ATTR_TOOLTIP[attr.label]} className="flex flex-col items-center justify-center bg-card border border-stroke rounded-lg p-2 cursor-help">
+                <div className="text-sm font-semibold text-muted">{ATTR_ABBR[attr.label] ?? attr.label.toUpperCase()}</div>
                 <Rollable label={attr.label} modifier={attr.modifier}>
                   <div className="text-lg font-bold">{attr.modifier >= 0 ? '+' : ''}{attr.modifier}</div>
                 </Rollable>
@@ -195,27 +203,17 @@ export default function DesktopView({
           {/* Separator */}
           <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
 
-          {/* Misc Info Section */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-1.5 mb-2">
-            <div className="min-w-0 overflow-hidden">
-              <DefenseCard
-                attributes={character.attributes}
-                armor={2}
-                shield={2}
-                others={3}
-                othersDetails={[
-                  { label: 'Anel de Proteção', value: 1 },
-                  { label: 'Abrigo', value: 2 },
-                ]}
-              />
+          {/* Senses/Proficiencies + Misc Info Section */}
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
+            {/* Left: Senses + Proficiencies */}
+            <div className="flex flex-col gap-1.5">
+              <SensesCard senses={character.senses} />
+              <ProficienciesCard proficiencies={character.proficiencies} />
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-0 order-2 lg:order-3">
-              <SpellDCCard
-                attributes={character.attributes}
-                hasSpells={true}
-                proficiencyBonus={2}
-              />
+            {/* Right: Defense, Initiative, Size+Movement, SpellDC */}
+            <div className="flex flex-col gap-1.5">
+              <DefenseCard defenses={character.defenses} />
 
               <InitiativeCard
                 attributes={character.attributes}
@@ -223,41 +221,37 @@ export default function DesktopView({
                 onSwitchToCombat={onSwitchToCombat}
                 onRollInitiative={onRollInitiative}
               />
-            </div>
 
-            <div className="grid grid-cols-2 lg:flex lg:flex-col gap-1.5 min-w-0 order-3 lg:order-2 col-span-2 lg:col-span-1">
-              <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help lg:flex-1">
-                <div className="bg-card border border-stroke rounded-lg p-2 h-full flex items-center">
+              <div className="grid grid-cols-2 gap-1.5">
+                <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help">
+                  <div className="bg-card border border-stroke rounded-lg p-2 flex items-center">
+                    <div className="flex items-center justify-between text-sm w-full">
+                      <span className="font-semibold text-muted truncate">Tamanho</span>
+                      <span className="font-bold capitalize">{character.size ?? 'Médio'}</span>
+                    </div>
+                  </div>
+                </Tooltip>
+
+                <div className="bg-card border border-stroke rounded-lg p-2 flex items-center">
                   <div className="flex items-center justify-between text-sm w-full">
-                    <span className="font-semibold text-muted truncate">Tamanho</span>
-                    <span className="font-bold">Médio</span>
+                    <span className="font-semibold text-muted truncate">Desloc.</span>
+                    <span className="font-bold whitespace-nowrap">
+                      {character.movement != null
+                        ? `${character.movement}m / ${Math.floor(character.movement / 1.5)}q`
+                        : '9m / 6q'}
+                    </span>
                   </div>
                 </div>
-              </Tooltip>
-
-              <div className="bg-card border border-stroke rounded-lg p-2 lg:flex-1 flex items-center">
-                <div className="flex items-center justify-between text-sm w-full">
-                  <span className="font-semibold text-muted truncate">Desloc.</span>
-                  <span className="font-bold whitespace-nowrap">9m / 6q</span>
-                </div>
               </div>
+
+              {character.spellSaveDc != null && (
+                <SpellDCCard
+                  spellSaveDc={character.spellSaveDc}
+                  tooltip={character.spellDcTooltip}
+                  notes={character.spellDcNotes}
+                />
+              )}
             </div>
-          </div>
-
-          {/* Separator */}
-          <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
-
-          {/* Senses, Proficiencies Section */}
-          <div className="grid grid-cols-2 gap-1.5 mb-2 flex-1">
-            <SensesCard
-              senses={senses}
-              onSensesChange={onSensesChange}
-            />
-
-            <ProficienciesCard
-              proficiencies={proficiencies}
-              onProficienciesChange={onProficienciesChange}
-            />
           </div>
 
           {/* Separator */}
@@ -323,6 +317,7 @@ export default function DesktopView({
             <OtherTab
               character={character}
               onResistancesChange={onResistancesChange}
+              onNotesChange={onNotesChange}
             />
           )}
 

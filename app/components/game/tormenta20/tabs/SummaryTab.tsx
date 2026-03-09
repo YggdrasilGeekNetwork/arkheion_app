@@ -1,10 +1,23 @@
-import type { Character, Sense, Proficiency, Currencies, ActiveEffect, EquippedItems, EquipmentItem } from '~/types/character'
+import type { Character, Currencies, ActiveEffect, EquippedItems, EquipmentItem } from '~/types/character'
+
+const ATTR_ABBR: Record<string, string> = {
+  forca: 'FOR', destreza: 'DES', constituicao: 'CON',
+  inteligencia: 'INT', sabedoria: 'SAB', carisma: 'CAR',
+}
+
+const ATTR_TOOLTIP: Record<string, string> = {
+  forca: 'Sua capacidade de esmagar um tomate com as próprias mãos.',
+  destreza: 'Sua capacidade de arremessar um tomate com precisão ou desviar de um atirado em você.',
+  constituicao: 'Sua capacidade de comer um tomate podre ou mofado sem passar mal.',
+  inteligencia: 'Saber que um tomate é botanicamente classificado como uma fruta.',
+  sabedoria: 'O bom senso de saber que um tomate não pertence a uma salada de frutas.',
+  carisma: 'A habilidade de persuasão necessária para vender uma salada de frutas com tomate.',
+}
 import Rollable from '../Rollable'
 import HealthCard from '../HealthCard'
 import ManaCard from '../ManaCard'
 import DefenseCard from '../DefenseCard'
 import SkillsCard from '../SkillsCard'
-import Tooltip from '~/components/ui/Tooltip'
 import SpellDCCard from '../SpellDCCard'
 import InitiativeCard from '../InitiativeCard'
 import SensesCard from '../SensesCard'
@@ -14,17 +27,13 @@ import ActiveEffectsSection from '../ActiveEffectsSection'
 
 type SummaryTabProps = {
   character: Character
-  senses: Sense[]
-  proficiencies: Proficiency[]
   onHealthChange: (delta: number) => void
   onManaChange: (delta: number) => void
-  onSkillsChange: (newSkills: typeof character.skills) => void
+  onSkillsChange: (newSkills: Character['skills']) => void
   onBleedingRoll: () => Promise<void>
   onConRoll: () => void
   onRollInitiative: (result: number) => void
   onSwitchToCombat: () => void
-  onSensesChange: (newSenses: Sense[]) => void
-  onProficienciesChange: (newProficiencies: Proficiency[]) => void
   onCurrenciesChange: (newCurrencies: Currencies) => void
   onEquippedItemsChange: (newItems: EquippedItems) => void
   onBackpackChange: (newBackpack: (EquipmentItem | null)[]) => void
@@ -38,8 +47,6 @@ type SummaryTabProps = {
 
 export default function SummaryTab({
   character,
-  senses,
-  proficiencies,
   onHealthChange,
   onManaChange,
   onSkillsChange,
@@ -47,8 +54,6 @@ export default function SummaryTab({
   onConRoll,
   onRollInitiative,
   onSwitchToCombat,
-  onSensesChange,
-  onProficienciesChange,
   onCurrenciesChange,
   onEquippedItemsChange,
   onBackpackChange,
@@ -64,8 +69,8 @@ export default function SummaryTab({
       {/* Attributes Section */}
       <div className="grid grid-cols-6 gap-[0.5vw] mb-[1vh]">
         {character.attributes.map((attr) => (
-          <div key={attr.label} className="flex flex-col items-center bg-card border border-stroke rounded-lg p-1">
-            <div className="text-xs font-semibold text-muted">{attr.label}</div>
+          <div key={attr.label} title={ATTR_TOOLTIP[attr.label]} className="flex flex-col items-center bg-card border border-stroke rounded-lg p-1 cursor-help">
+            <div className="text-xs font-semibold text-muted">{ATTR_ABBR[attr.label] ?? attr.label.toUpperCase()}</div>
             <Rollable label={attr.label} modifier={attr.modifier}>
               <div className="text-base font-bold">{attr.modifier >= 0 ? '+' : ''}{attr.modifier}</div>
             </Rollable>
@@ -114,65 +119,53 @@ export default function SummaryTab({
       {/* Separator */}
       <div className="h-px bg-stroke mb-[1vh]" />
 
-      {/* Misc Info Section */}
+      {/* Senses/Proficiencies + Misc Info Section */}
       <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
-        <DefenseCard
-          attributes={character.attributes}
-          armor={2}
-          shield={2}
-          others={3}
-          othersDetails={[
-            { label: 'Anel de Proteção', value: 1 },
-            { label: 'Abrigo', value: 2 },
-          ]}
-        />
-
+        {/* Left: Senses + Proficiencies */}
         <div className="flex flex-col gap-[0.5vw]">
-          <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help flex-1">
-            <div className="bg-card border border-stroke rounded-lg p-1.5 h-full flex items-center">
-              <div className="flex items-center justify-between text-xs w-full">
-                <span className="font-semibold text-muted">Tamanho</span>
-                <span className="font-bold">Médio</span>
-              </div>
-            </div>
-          </Tooltip>
-
-          <div className="bg-card border border-stroke rounded-lg p-1.5 flex-1 flex items-center">
-            <div className="flex items-center justify-between text-xs w-full">
-              <span className="font-semibold text-muted">Desloc.</span>
-              <span className="font-bold">9m / 6q</span>
-            </div>
-          </div>
+          <SensesCard senses={character.senses} />
+          <ProficienciesCard proficiencies={character.proficiencies} />
         </div>
 
-        <SpellDCCard
-          attributes={character.attributes}
-          hasSpells={true}
-          proficiencyBonus={2}
-        />
+        {/* Right: Defense, Initiative, Size+Movement, SpellDC */}
+        <div className="flex flex-col gap-[0.5vw]">
+          <DefenseCard defenses={character.defenses} />
 
-        <InitiativeCard
-          attributes={character.attributes}
-          currentRoll={character.initiativeRoll}
-          onSwitchToCombat={onSwitchToCombat}
-          onRollInitiative={onRollInitiative}
-        />
-      </div>
+          <InitiativeCard
+            attributes={character.attributes}
+            currentRoll={character.initiativeRoll}
+            onSwitchToCombat={onSwitchToCombat}
+            onRollInitiative={onRollInitiative}
+          />
 
-      {/* Separator */}
-      <div className="h-px bg-stroke mb-[1vh]" />
+          <div className="grid grid-cols-2 gap-[0.5vw]">
+            <div className="bg-card border border-stroke rounded-lg p-1.5 flex items-center">
+              <div className="flex items-center justify-between text-xs w-full">
+                <span className="font-semibold text-muted">Tamanho</span>
+                <span className="font-bold capitalize">{character.size ?? 'Médio'}</span>
+              </div>
+            </div>
 
-      {/* Senses, Proficiencies Section */}
-      <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
-        <SensesCard
-          senses={senses}
-          onSensesChange={onSensesChange}
-        />
+            <div className="bg-card border border-stroke rounded-lg p-1.5 flex items-center">
+              <div className="flex items-center justify-between text-xs w-full">
+                <span className="font-semibold text-muted">Desloc.</span>
+                <span className="font-bold">
+                  {character.movement != null
+                    ? `${character.movement}m / ${Math.floor(character.movement / 1.5)}q`
+                    : '9m / 6q'}
+                </span>
+              </div>
+            </div>
+          </div>
 
-        <ProficienciesCard
-          proficiencies={proficiencies}
-          onProficienciesChange={onProficienciesChange}
-        />
+          {character.spellSaveDc != null && (
+            <SpellDCCard
+              spellSaveDc={character.spellSaveDc}
+              tooltip={character.spellDcTooltip}
+              notes={character.spellDcNotes}
+            />
+          )}
+        </div>
       </div>
 
       {/* Separator */}

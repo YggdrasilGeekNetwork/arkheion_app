@@ -141,6 +141,12 @@ const characterSlice = createSlice({
       state.character.version += 1
       state.character.updatedAt = new Date().toISOString()
     },
+    updateNotes(state, action: PayloadAction<string>) {
+      if (!state.character) return
+      state.character.notes = action.payload
+      state.character.version += 1
+      state.character.updatedAt = new Date().toISOString()
+    },
     updateSpells(state, action: PayloadAction<Spell[]>) {
       if (!state.character) return
       state.character.spells = action.payload

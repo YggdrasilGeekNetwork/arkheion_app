@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from '@remix-run/react'
+import { useSearchParams, useRevalidator } from '@remix-run/react'
 import TopBar from './TopBar'
 import CharacterHeader from './CharacterHeader'
 import BottomNavigation from './BottomNavigation'
@@ -42,6 +42,7 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
   const { state, optimisticDispatch } = useCharacter()
   const { addRoll } = useDiceRoll()
   const { socket } = useSocketContext()
+  const { revalidate } = useRevalidator()
 
   const {
     combatActive,
@@ -84,73 +85,6 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
       setActiveNav('combat')
     }
   }, [combatActive])
-
-  // For now, keep senses and proficiencies as local state since they're not in the Character type yet
-  const [senses, setSenses] = useState([
-    {
-      name: 'Visão no Escuro',
-      value: '18m',
-      tooltip: 'Enxerga no escuro como se fosse penumbra',
-      visible: false
-    },
-    {
-      name: 'Visão na Penumbra',
-      value: 'Sim',
-      tooltip: 'Enxerga em penumbra como se fosse luz plena',
-      visible: false
-    },
-    {
-      name: 'Percepção Passiva',
-      value: 12,
-      tooltip: 'Capacidade de notar coisas sem procurar ativamente',
-      visible: true
-    },
-    {
-      name: 'Intuição Passiva',
-      value: 10,
-      tooltip: 'Capacidade de perceber mentiras e intenções',
-      visible: true
-    },
-    {
-      name: 'Investigação Passiva',
-      value: 11,
-      tooltip: 'Capacidade de encontrar pistas sem procurar ativamente',
-      visible: true
-    },
-  ])
-
-  const [proficiencies, setProficiencies] = useState([
-    {
-      name: 'Armas Simples',
-      tooltip: 'Adaga, clava, cajado, etc',
-      visible: true
-    },
-    {
-      name: 'Armas Marciais',
-      tooltip: 'Espada longa, arco longo, machado de batalha, etc',
-      visible: true
-    },
-    {
-      name: 'Armaduras Leves',
-      tooltip: 'Couro, couro batido',
-      visible: false
-    },
-    {
-      name: 'Armaduras Médias',
-      tooltip: 'Cota de malha, brunea',
-      visible: false
-    },
-    {
-      name: 'Armaduras Pesadas',
-      tooltip: 'Meia-armadura, armadura completa',
-      visible: false
-    },
-    {
-      name: 'Escudos',
-      tooltip: 'Todos os tipos de escudo',
-      visible: false
-    },
-  ])
 
   const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([])
 
@@ -310,18 +244,34 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
   }
 
   const handleLevelUp = async (data: LevelUpData) => {
+    if (!character) return
     setIsUpdating(true)
     try {
-      await optimisticDispatch({
-        type: 'LEVEL_UP',
-        payload: data,
+      const response = await fetch('/api/level-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: character.id,
+          classKey: data.classId,
+          abilitiesChosen: data.newAbilities.map(a => a.id),
+        }),
       })
+      const result = await response.json() as { ok?: boolean; error?: string }
+      if (!response.ok || result.error) {
+        console.error('Failed to level up:', result.error)
+        return
+      }
       setLevelUpModalOpen(false)
+      revalidate()
     } catch (error) {
       console.error('Failed to level up:', error)
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  const handleNotesChange = async (notes: string) => {
+    await optimisticDispatch({ type: 'UPDATE_NOTES', payload: notes })
   }
 
   const handleResistancesChange = async (newResistances: typeof character.resistances) => {
@@ -1028,8 +978,6 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
         {activeNav === 'summary' && (
           <SummaryTab
             character={character}
-            senses={senses}
-            proficiencies={proficiencies}
             onHealthChange={handleHealthChange}
             onManaChange={handleManaChange}
             onSkillsChange={handleSkillsChange}
@@ -1037,8 +985,6 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
             onConRoll={handleConRoll}
             onRollInitiative={handleRollInitiative}
             onSwitchToCombat={() => setActiveNav('combat')}
-            onSensesChange={setSenses}
-            onProficienciesChange={setProficiencies}
             onEquippedItemsChange={handleEquippedItemsChange}
             onBackpackChange={handleBackpackChange}
             onCurrenciesChange={handleCurrenciesChange}
@@ -1119,6 +1065,7 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
           <OtherTab
             character={character}
             onResistancesChange={handleResistancesChange}
+            onNotesChange={handleNotesChange}
           />
         )}
         </div>
@@ -1126,8 +1073,6 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
         {/* DESKTOP/TABLET: Two column view */}
         <DesktopView
           character={character}
-          senses={senses}
-          proficiencies={proficiencies}
           activeNavDesktop={activeNavDesktop}
           navItemsDesktop={navItemsDesktop}
           weaponModalOpen={weaponModalOpen}
@@ -1141,12 +1086,11 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
           onRollInitiative={handleRollInitiative}
           onToggleCombat={handleToggleCombat}
           onSwitchToCombat={() => setActiveNav('combat')}
-          onSensesChange={setSenses}
-          onProficienciesChange={setProficiencies}
           onEquippedItemsChange={handleEquippedItemsChange}
           onBackpackChange={handleBackpackChange}
           onCurrenciesChange={handleCurrenciesChange}
           onResistancesChange={handleResistancesChange}
+          onNotesChange={handleNotesChange}
           onNavChange={setActiveNav}
           onStartTurn={handleStartTurn}
           onUseAction={handleUseAction}

@@ -6,6 +6,11 @@ import Rollable from './Rollable'
 import { TORMENTA20_SKILLS } from '~/data/tormenta20Skills'
 import { getTotalLevel, getTrainingBonus, getHalfLevelBonus } from '~/utils/tormenta20'
 
+const ATTR_FULL_NAME: Record<string, string> = {
+  FOR: 'forca', DES: 'destreza', CON: 'constituicao',
+  INT: 'inteligencia', SAB: 'sabedoria', CAR: 'carisma',
+}
+
 type SkillsCardProps = {
   skills: Skill[]
   attributes: Attribute[]
@@ -33,18 +38,19 @@ export default function SkillsCard({
 
   const allSkills = useMemo(() => {
     return TORMENTA20_SKILLS.map(skillDef => {
-      const characterSkill = skills.find(s => s.name === skillDef.name)
-      const attribute = attributes.find(a => a.label === skillDef.attribute)
-      const attributeModifier = attribute?.modifier || 0
+      const attrFull = ATTR_FULL_NAME[skillDef.attribute] || skillDef.attribute
+      const apiSkill = skills.find(s => s.name.toLowerCase() === skillDef.name.toLowerCase())
+      const attributeObj = attributes.find(a => a.label === attrFull)
+      const attributeModifier = attributeObj?.modifier || 0
 
-      if (characterSkill) {
-        return characterSkill
+      if (apiSkill) {
+        return { ...apiSkill, name: skillDef.name, attribute: attrFull }
       } else {
         return {
           name: skillDef.name,
           modifier: attributeModifier,
           trained: false,
-          attribute: skillDef.attribute,
+          attribute: attrFull,
           tooltip: skillDef.tooltip,
           visibleInSummary: false,
           visibleInCombat: false,
@@ -74,8 +80,8 @@ export default function SkillsCard({
   }
 
   const handleToggleSkill = (skillName: string) => {
-    const existingIndex = skills.findIndex(s => s.name === skillName)
-    const skillDef = TORMENTA20_SKILLS.find(s => s.name === skillName)
+    const existingIndex = skills.findIndex(s => s.name.toLowerCase() === skillName.toLowerCase())
+    const skillDef = TORMENTA20_SKILLS.find(s => s.name.toLowerCase() === skillName.toLowerCase())
 
     if (existingIndex !== -1) {
       const newSkills = [...skills]
@@ -85,18 +91,20 @@ export default function SkillsCard({
       }
       onSkillsChange(newSkills)
     } else if (skillDef) {
-      const attribute = attributes.find(a => a.label === skillDef.attribute)
+      const attrFull = ATTR_FULL_NAME[skillDef.attribute] || skillDef.attribute
+      const attributeObj = attributes.find(a => a.label === attrFull)
+      const apiSkill = skills.find(s => s.name.toLowerCase() === skillDef.name.toLowerCase())
       const newSkill: Skill = {
         name: skillDef.name,
-        modifier: attribute?.modifier || 0,
-        trained: false,
-        attribute: skillDef.attribute,
+        modifier: attributeObj?.modifier || 0,
+        trained: apiSkill?.trained ?? false,
+        attribute: attrFull,
         tooltip: skillDef.tooltip,
         visibleInSummary: mode === 'summary',
         visibleInCombat: mode === 'combat',
         levelBonus: 0,
         trainingBonus: 0,
-        otherBonuses: [],
+        otherBonuses: apiSkill?.otherBonuses ?? [],
       }
       onSkillsChange([...skills, newSkill])
     }

@@ -74,6 +74,7 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
       case 'UPDATE_WEAPONS': appDispatch(characterActions.updateWeapons(action.payload)); break
       case 'UPDATE_ABILITIES': appDispatch(characterActions.updateAbilities(action.payload)); break
       case 'UPDATE_SPELLS': appDispatch(characterActions.updateSpells(action.payload)); break
+      case 'UPDATE_NOTES': appDispatch(characterActions.updateNotes(action.payload)); break
       case 'LEVEL_UP': appDispatch(characterActions.levelUp(action.payload)); break
       case 'OPTIMISTIC_UPDATE': appDispatch(characterActions.optimisticUpdate(action.payload)); break
       case 'REVERT_OPTIMISTIC': appDispatch(characterActions.revertOptimistic(action.payload)); break
@@ -154,6 +155,10 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
             case 'UPDATE_WEAPONS':
               update = { weapons: action.payload }
               updateKey = `${character.id}-WEAPONS`
+              break
+            case 'UPDATE_NOTES':
+              update = { notes: action.payload }
+              updateKey = `${character.id}-NOTES`
               break
             case 'LEVEL_UP':
               update = {} as Partial<Character>

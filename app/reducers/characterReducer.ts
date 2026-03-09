@@ -23,6 +23,7 @@ export type CharacterAction =
   | { type: 'UPDATE_ABILITIES'; payload: Ability[] }
   | { type: 'UPDATE_SPELLS'; payload: Spell[] }
   | { type: 'LEVEL_UP'; payload: LevelUpData }
+  | { type: 'UPDATE_NOTES'; payload: string }
   | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; update: Partial<Character> } }
   | { type: 'REVERT_OPTIMISTIC'; payload: string }
   | { type: 'CONFIRM_OPTIMISTIC'; payload: string }
@@ -352,6 +353,18 @@ export function characterReducer(state: CharacterState, action: CharacterAction)
         },
       }
     }
+
+    case 'UPDATE_NOTES':
+      if (!state.character) return state
+      return {
+        ...state,
+        character: {
+          ...state.character,
+          notes: action.payload,
+          version: state.character.version + 1,
+          updatedAt: new Date().toISOString(),
+        },
+      }
 
     case 'OPTIMISTIC_UPDATE':
       if (!state.character) return state

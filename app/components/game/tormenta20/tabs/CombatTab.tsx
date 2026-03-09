@@ -124,16 +124,7 @@ export default function CombatTab({
 
       {/* Defense and Combat Skills */}
       <div className="grid grid-cols-2 gap-2 mb-2">
-        <DefenseCard
-          attributes={character.attributes}
-          armor={2}
-          shield={2}
-          others={3}
-          othersDetails={[
-            { label: 'Anel de Proteção', value: 1 },
-            { label: 'Abrigo', value: 2 },
-          ]}
-        />
+        <DefenseCard defenses={character.defenses} />
 
         <SkillsCard
           skills={character.skills}

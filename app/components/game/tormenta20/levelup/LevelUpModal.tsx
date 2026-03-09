@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect } from 'react'
+import { useFetcher } from '@remix-run/react'
 import Modal from '~/components/ui/Modal'
 import type { Character, Ability } from '~/types/character'
 import type { LevelUpStep, LevelUpData } from '~/types/levelup'
@@ -17,43 +18,17 @@ import AbilitiesStep from './steps/AbilitiesStep'
 import SkillsStep from './steps/SkillsStep'
 import ReviewStep from './steps/ReviewStep'
 
+type ClassPowersData = {
+  powerChoices: number
+  fixedAbilities: string[]
+  selectablePowers: Ability[]
+} | null
+
 type LevelUpModalProps = {
   isOpen: boolean
   onClose: () => void
   character: Character
   onConfirm: (data: LevelUpData) => Promise<void>
-}
-
-// Mock available abilities for testing (in real app, this would come from class data)
-const getMockAbilitiesForLevel = (className: string, level: number): Ability[] => {
-  // Return some mock abilities based on class and level
-  if (level % 2 === 0) {
-    return [
-      {
-        id: `${className}-${level}-1`,
-        name: 'Ataque Extra',
-        description: 'Você pode fazer um ataque adicional quando usa a ação Atacar.',
-        type: 'passive',
-        source: `${className} ${level}`,
-      },
-      {
-        id: `${className}-${level}-2`,
-        name: 'Golpe Brutal',
-        description: 'Quando acerta um ataque crítico, adicione seu modificador de Força ao dano uma segunda vez.',
-        type: 'passive',
-        source: `${className} ${level}`,
-      },
-    ]
-  }
-  return [
-    {
-      id: `${className}-${level}-1`,
-      name: 'Especialização em Combate',
-      description: 'Escolha um tipo de arma. Você recebe +2 de dano com essa arma.',
-      type: 'passive',
-      source: `${className} ${level}`,
-    },
-  ]
 }
 
 export default function LevelUpModal({
@@ -75,12 +50,15 @@ export default function LevelUpModal({
 
   // Step 3: Abilities
   const [selectedAbilities, setSelectedAbilities] = useState<Ability[]>([])
+  const [classPowers, setClassPowers] = useState<ClassPowersData>(null)
 
   // Step 4: Skills
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
 
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const powersFetcher = useFetcher<ClassPowersData>()
 
   // Calculate derived values
   const currentTotalLevel = getTotalLevel(character.classes)
@@ -114,10 +92,26 @@ export default function LevelUpModal({
     return calculateMpGained(selectedClassId, mpAttr?.modifier ?? 0)
   }
 
-  const getAvailableAbilities = (): Ability[] => {
-    if (!selectedClassId) return []
-    return getMockAbilitiesForLevel(selectedClassId, getNewClassLevel())
-  }
+  const getAvailableAbilities = (): Ability[] => classPowers?.selectablePowers ?? []
+
+  // Fetch class powers when entering abilities step
+  useEffect(() => {
+    if (currentStep === 'abilities' && selectedClassId) {
+      const params = new URLSearchParams({
+        classKey: selectedClassId,
+        level: String(getNewClassLevel()),
+        characterId: character.id,
+      })
+      powersFetcher.load(`/api/class-powers?${params}`)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, selectedClassId])
+
+  useEffect(() => {
+    if (powersFetcher.data !== undefined) {
+      setClassPowers(powersFetcher.data)
+    }
+  }, [powersFetcher.data])
 
   // For now, no skills step (simplified)
   const showSkillsStep = false
@@ -160,8 +154,10 @@ export default function LevelUpModal({
         return selectedClassId !== null && hpRoll !== null
       case 'attributes':
         return attributeChoice !== null
-      case 'abilities':
-        return true // Abilities are optional
+      case 'abilities': {
+        const choices = classPowers?.powerChoices ?? 0
+        return choices === 0 || selectedAbilities.length === choices
+      }
       case 'skills':
         return selectedSkills.length === maxSkillsToSelect || maxSkillsToSelect === 0
       case 'review':
@@ -230,6 +226,7 @@ export default function LevelUpModal({
     setAttributeChoice(null)
     setSelectedAbilities([])
     setSelectedSkills([])
+    setClassPowers(null)
     onClose()
   }
 
@@ -238,14 +235,15 @@ export default function LevelUpModal({
     setIsNewClass(isNew)
     // Reset dependent state
     setSelectedAbilities([])
+    setClassPowers(null)
   }
 
   const handleToggleAbility = (ability: Ability) => {
+    const choices = classPowers?.powerChoices ?? 0
     setSelectedAbilities(prev => {
       const exists = prev.some(a => a.id === ability.id)
-      if (exists) {
-        return prev.filter(a => a.id !== ability.id)
-      }
+      if (exists) return prev.filter(a => a.id !== ability.id)
+      if (choices > 0 && prev.length >= choices) return prev
       return [...prev, ability]
     })
   }
@@ -292,6 +290,9 @@ export default function LevelUpModal({
             selectedAbilities={selectedAbilities}
             className={selectedClassId ?? ''}
             newLevel={getNewClassLevel()}
+            powerChoices={classPowers?.powerChoices ?? 0}
+            fixedAbilities={classPowers?.fixedAbilities ?? []}
+            isLoading={powersFetcher.state === 'loading'}
             onToggleAbility={handleToggleAbility}
           />
         )

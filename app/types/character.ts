@@ -29,6 +29,17 @@ export type Defense = {
   tooltip: string
 }
 
+export type CharacterSense = {
+  name: string
+  value: string
+  tooltip?: string
+}
+
+export type CharacterProficiency = {
+  name: string
+  tooltip?: string
+}
+
 export type Skill = {
   name: string
   modifier: number
@@ -218,6 +229,13 @@ export type Character = {
   maxHealth: number
   mana: number
   maxMana: number
+  size?: string
+  movement?: number
+  proficiencyBonus: number
+  spellSaveDc?: number
+  spellcastingAttribute?: string
+  spellDcNotes?: string[]
+  spellDcTooltip?: string
 
   // Attributes
   attributes: Attribute[]
@@ -225,6 +243,8 @@ export type Character = {
   // Combat
   resistances: Resistance[]
   defenses: Defense[]
+  senses: CharacterSense[]
+  proficiencies: CharacterProficiency[]
   inCombat?: boolean
   initiativeRoll: number | null
   isMyTurn: boolean
@@ -244,6 +264,9 @@ export type Character = {
   equippedItems: EquippedItems
   backpack: (EquipmentItem | null)[]
   currencies: Currencies
+
+  // Notes
+  notes?: string
 
   // Metadata
   updatedAt: string
