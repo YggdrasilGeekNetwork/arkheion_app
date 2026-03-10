@@ -104,3 +104,10 @@ export async function updateMana(id: string, mana: number) {
     body: JSON.stringify({ mana }),
   })
 }
+
+export async function updateSensesVisibility(id: string, hiddenSenseNames: string[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/senses-visibility`, {
+    method: 'PATCH',
+    body: JSON.stringify({ hiddenSenseNames }),
+  })
+}

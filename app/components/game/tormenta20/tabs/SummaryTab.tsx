@@ -1,4 +1,6 @@
 import type { Character, Currencies, ActiveEffect, EquippedItems, EquipmentItem } from '~/types/character'
+import MiscGrid from '../MiscGrid'
+import { buildMiscCards } from '../miscCards'
 
 const ATTR_ABBR: Record<string, string> = {
   forca: 'FOR', destreza: 'DES', constituicao: 'CON',
@@ -16,12 +18,7 @@ const ATTR_TOOLTIP: Record<string, string> = {
 import Rollable from '../Rollable'
 import HealthCard from '../HealthCard'
 import ManaCard from '../ManaCard'
-import DefenseCard from '../DefenseCard'
 import SkillsCard from '../SkillsCard'
-import SpellDCCard from '../SpellDCCard'
-import InitiativeCard from '../InitiativeCard'
-import SensesCard from '../SensesCard'
-import ProficienciesCard from '../ProficienciesCard'
 import EquippedItemsSummaryCard from '../EquippedItemsSummaryCard'
 import ActiveEffectsSection from '../ActiveEffectsSection'
 
@@ -97,7 +94,7 @@ export default function SummaryTab({
       {/* Separator */}
       <div className="h-px bg-stroke mb-[1vh]" />
 
-      <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[0.5vw] mb-[1vh]">
         <SkillsCard
           skills={character.skills}
           attributes={character.attributes}
@@ -120,53 +117,12 @@ export default function SummaryTab({
       <div className="h-px bg-stroke mb-[1vh]" />
 
       {/* Senses/Proficiencies + Misc Info Section */}
-      <div className="grid grid-cols-2 gap-[0.5vw] mb-[1vh]">
-        {/* Left: Senses + Proficiencies */}
-        <div className="flex flex-col gap-[0.5vw]">
-          <SensesCard senses={character.senses} />
-          <ProficienciesCard proficiencies={character.proficiencies} />
-        </div>
-
-        {/* Right: Defense, Initiative, Size+Movement, SpellDC */}
-        <div className="flex flex-col gap-[0.5vw]">
-          <DefenseCard defenses={character.defenses} />
-
-          <InitiativeCard
-            attributes={character.attributes}
-            currentRoll={character.initiativeRoll}
-            onSwitchToCombat={onSwitchToCombat}
-            onRollInitiative={onRollInitiative}
-          />
-
-          <div className="grid grid-cols-2 gap-[0.5vw]">
-            <div className="bg-card border border-stroke rounded-lg p-1.5 flex items-center">
-              <div className="flex items-center justify-between text-xs w-full">
-                <span className="font-semibold text-muted">Tamanho</span>
-                <span className="font-bold capitalize">{character.size ?? 'Médio'}</span>
-              </div>
-            </div>
-
-            <div className="bg-card border border-stroke rounded-lg p-1.5 flex items-center">
-              <div className="flex items-center justify-between text-xs w-full">
-                <span className="font-semibold text-muted">Desloc.</span>
-                <span className="font-bold">
-                  {character.movement != null
-                    ? `${character.movement}m / ${Math.floor(character.movement / 1.5)}q`
-                    : '9m / 6q'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {character.spellSaveDc != null && (
-            <SpellDCCard
-              spellSaveDc={character.spellSaveDc}
-              tooltip={character.spellDcTooltip}
-              notes={character.spellDcNotes}
-            />
-          )}
-        </div>
-      </div>
+      <MiscGrid
+        cards={buildMiscCards(character, onSwitchToCombat, onRollInitiative)}
+        minColWidth={260}
+        gap={6}
+        className="mb-[1vh]"
+      />
 
       {/* Separator */}
       <div className="h-px bg-stroke mb-[1vh]" />

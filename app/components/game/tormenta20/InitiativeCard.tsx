@@ -3,15 +3,13 @@ import { useDiceRoll } from '~/contexts/DiceRollContext'
 import Modal from '~/components/ui/Modal'
 
 type InitiativeCardProps = {
-  attributes: { label: string; modifier: number }[]
+  initiativeModifier: number
   currentRoll?: number | null
   onSwitchToCombat?: () => void
   onRollInitiative?: (result: number) => void
 }
 
-const InitiativeCard = ({ attributes, currentRoll, onSwitchToCombat, onRollInitiative }: InitiativeCardProps) => {
-  const desAttribute = attributes.find((attr) => attr.label === 'DES')
-  const attrModifier = desAttribute ? desAttribute.modifier : 0
+const InitiativeCard = ({ initiativeModifier: attrModifier, currentRoll, onSwitchToCombat, onRollInitiative }: InitiativeCardProps) => {
   const { addRoll } = useDiceRoll()
   const [showModal, setShowModal] = useState(false)
 
@@ -36,18 +34,18 @@ const InitiativeCard = ({ attributes, currentRoll, onSwitchToCombat, onRollIniti
 
   return (
     <>
-      <div className="bg-card border border-stroke rounded-lg p-2">
-        <div className="flex items-center justify-between text-xs md:text-sm min-h-[20px] md:min-h-[24px]">
+      <div className="bg-card border border-stroke rounded-lg px-2 py-1">
+        <div className="flex items-center justify-between text-base">
           <span className="font-semibold text-muted">Iniciativa</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {currentRoll !== null && currentRoll !== undefined && (
-              <div className="bg-accent text-card rounded px-2 py-0.5 text-sm md:text-base font-bold">
+              <div className="bg-accent text-card rounded px-1.5 py-0.5 text-sm font-bold">
                 {currentRoll}
               </div>
             )}
             <span
               onClick={handleClick}
-              className="cursor-pointer hover:text-accent transition-colors border-b border-dotted border-current font-bold text-base md:text-lg"
+              className="cursor-pointer hover:text-accent transition-colors border-b border-dotted border-current font-bold text-lg"
               title={`Clique para ${currentRoll !== null && currentRoll !== undefined ? 're-' : ''}rolar d20${attrModifier >= 0 ? '+' : ''}${attrModifier}`}
             >
               {attrModifier >= 0 ? '+' : ''}{attrModifier}

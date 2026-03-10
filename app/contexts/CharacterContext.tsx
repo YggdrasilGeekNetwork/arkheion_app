@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '~/store/hooks'
 import { characterActions } from '~/store/slices/characterSlice'
 import type { CharacterAction, CharacterState } from '~/reducers/characterReducer'
 import type { Character } from '~/types/character'
-import { updateCharacter } from '~/utils/api'
+import { updateCharacter, updateHealth, updateMana } from '~/utils/api'
 import { useToast } from './ToastContext'
 
 type CharacterContextType = {
@@ -37,7 +37,13 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
 
       const timeout = setTimeout(async () => {
         try {
-          await updateCharacter(characterId, update)
+          if ('health' in update && update.health !== undefined) {
+            await updateHealth(characterId, update.health)
+          } else if ('mana' in update && update.mana !== undefined) {
+            await updateMana(characterId, update.mana)
+          } else {
+            await updateCharacter(characterId, update)
+          }
           pendingUpdatesRef.current.delete(updateKey)
         } catch (error) {
           console.error('Failed to update character:', error)

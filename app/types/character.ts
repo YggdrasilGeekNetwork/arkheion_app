@@ -33,6 +33,7 @@ export type CharacterSense = {
   name: string
   value: string
   tooltip?: string
+  visible: boolean
 }
 
 export type CharacterProficiency = {
@@ -230,7 +231,9 @@ export type Character = {
   mana: number
   maxMana: number
   size?: string
+  sizeTooltip?: string
   movement?: number
+  movementTooltip?: string
   proficiencyBonus: number
   spellSaveDc?: number
   spellcastingAttribute?: string

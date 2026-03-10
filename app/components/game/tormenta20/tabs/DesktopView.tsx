@@ -1,4 +1,6 @@
 import type { Character, CombatAction, WeaponAttack, EquippedItems, EquipmentItem, Currencies, ActiveEffect, Ability } from '~/types/character'
+import MiscGrid from '../MiscGrid'
+import { buildMiscCards } from '../miscCards'
 
 const ATTR_ABBR: Record<string, string> = {
   forca: 'FOR', destreza: 'DES', constituicao: 'CON',
@@ -18,13 +20,7 @@ type NavItem = { id: string; label: string }
 import Rollable from '../Rollable'
 import HealthCard from '../HealthCard'
 import ManaCard from '../ManaCard'
-import DefenseCard from '../DefenseCard'
 import SkillsCard from '../SkillsCard'
-import Tooltip from '~/components/ui/Tooltip'
-import SpellDCCard from '../SpellDCCard'
-import InitiativeCard from '../InitiativeCard'
-import SensesCard from '../SensesCard'
-import ProficienciesCard from '../ProficienciesCard'
 import EquippedItemsSummaryCard from '../EquippedItemsSummaryCard'
 import ActiveEffectsSection from '../ActiveEffectsSection'
 import BottomNavigation from '../BottomNavigation'
@@ -204,55 +200,12 @@ export default function DesktopView({
           <hr className="h-px bg-stroke mb-2 flex-shrink-0" />
 
           {/* Senses/Proficiencies + Misc Info Section */}
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
-            {/* Left: Senses + Proficiencies */}
-            <div className="flex flex-col gap-1.5">
-              <SensesCard senses={character.senses} />
-              <ProficienciesCard proficiencies={character.proficiencies} />
-            </div>
-
-            {/* Right: Defense, Initiative, Size+Movement, SpellDC */}
-            <div className="flex flex-col gap-1.5">
-              <DefenseCard defenses={character.defenses} />
-
-              <InitiativeCard
-                attributes={character.attributes}
-                currentRoll={character.initiativeRoll}
-                onSwitchToCombat={onSwitchToCombat}
-                onRollInitiative={onRollInitiative}
-              />
-
-              <div className="grid grid-cols-2 gap-1.5">
-                <Tooltip content="Sem bônus ou penalidade por tamanho" className="cursor-help">
-                  <div className="bg-card border border-stroke rounded-lg p-2 flex items-center">
-                    <div className="flex items-center justify-between text-sm w-full">
-                      <span className="font-semibold text-muted truncate">Tamanho</span>
-                      <span className="font-bold capitalize">{character.size ?? 'Médio'}</span>
-                    </div>
-                  </div>
-                </Tooltip>
-
-                <div className="bg-card border border-stroke rounded-lg p-2 flex items-center">
-                  <div className="flex items-center justify-between text-sm w-full">
-                    <span className="font-semibold text-muted truncate">Desloc.</span>
-                    <span className="font-bold whitespace-nowrap">
-                      {character.movement != null
-                        ? `${character.movement}m / ${Math.floor(character.movement / 1.5)}q`
-                        : '9m / 6q'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {character.spellSaveDc != null && (
-                <SpellDCCard
-                  spellSaveDc={character.spellSaveDc}
-                  tooltip={character.spellDcTooltip}
-                  notes={character.spellDcNotes}
-                />
-              )}
-            </div>
-          </div>
+          <MiscGrid
+            cards={buildMiscCards(character, onSwitchToCombat, onRollInitiative)}
+            minColWidth={500}
+            gap={6}
+            className="mb-2"
+          />
 
           {/* Separator */}
           <hr className="h-px bg-stroke mb-2 flex-shrink-0" />

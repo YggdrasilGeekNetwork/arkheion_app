@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+.misc-masonry {
+  display: -webkit-box; /* Not needed if autoprefixing */
+  display: -ms-flexbox; /* Not needed if autoprefixing */
+  display: flex;
+  margin-left: -10px; /* gutter size offset */
+  width: auto;
+}
+.misc-masonry-col {
+  padding-left: 10px; /* gutter size */
+  background-clip: padding-box;
+}
+.misc-masonry-col > div {
+  margin-bottom: 0.375rem;
+}
+
 html {
   font-size: clamp(14px, 2vw, 16px);
 }

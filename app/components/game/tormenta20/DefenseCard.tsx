@@ -1,4 +1,4 @@
-import Card from '~/components/ui/Card'
+import Tooltip from '~/components/ui/Tooltip'
 import type { Defense } from '~/types/character'
 
 type DefenseCardProps = {
@@ -10,13 +10,15 @@ const DefenseCard = ({ defenses }: DefenseCardProps) => {
   if (!defesa) return null
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-0.5 md:mb-1">
-        <div className="text-sm md:text-base font-semibold">Defesa</div>
-        <div className="text-lg md:text-xl font-bold">{defesa.value}</div>
+    <Tooltip content={defesa.tooltip ?? ''} className="cursor-help">
+      <div className="bg-card border border-stroke rounded-lg px-2 py-1 flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <span className="text-base font-semibold text-muted">Defesa</span>
+          <span className="text-xs opacity-50">?</span>
+        </div>
+        <span className="text-lg font-bold">{defesa.value}</span>
       </div>
-      <div className="text-[10px] md:text-xs text-muted leading-tight">{defesa.tooltip}</div>
-    </Card>
+    </Tooltip>
   )
 }
 

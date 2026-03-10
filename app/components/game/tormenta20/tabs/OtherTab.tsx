@@ -10,15 +10,10 @@ type OtherTabProps = {
 
 export default function OtherTab({
   character,
-  onResistancesChange,
   onNotesChange,
 }: OtherTabProps) {
   return (
     <div className="flex flex-col gap-3 h-full">
-      <ResistanceCard
-        resistances={character.resistances}
-        onResistancesChange={onResistancesChange}
-      />
       <PlayerNotesCard
         notes={character.notes ?? ''}
         onChange={onNotesChange}

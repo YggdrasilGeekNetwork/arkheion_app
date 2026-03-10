@@ -22,12 +22,12 @@ export const GET_CHARACTER_QUERY = `
       origin { name tooltip }
       deity { name tooltip }
 
-      health maxHealth mana maxMana size movement proficiencyBonus spellSaveDc spellcastingAttribute spellDcNotes spellDcTooltip
+      health maxHealth mana maxMana size sizeTooltip movement movementTooltip proficiencyBonus spellSaveDc spellcastingAttribute spellDcNotes spellDcTooltip
 
       attributes { label value modifier visible }
       resistances { name value tooltip visible }
       defenses { name value tooltip }
-      senses { name value tooltip }
+      senses { name value tooltip visible }
       proficiencies { name tooltip }
 
       inCombat initiativeRoll isMyTurn turnOrder
@@ -105,6 +105,33 @@ export const GET_CLASS_POWERS_FOR_LEVEL_QUERY = `
       powerChoices
       fixedAbilities
       selectablePowers { id name description type cost { pm pv } source }
+    }
+  }
+`
+
+export const UPDATE_CHARACTER_HIDDEN_SENSES_MUTATION = `
+  mutation UpdateCharacterHiddenSenses($id: ID!, $hiddenSenseNames: [String!]!) {
+    updateCharacterHiddenSenses(id: $id, hiddenSenseNames: $hiddenSenseNames) {
+      character { id }
+      errors
+    }
+  }
+`
+
+export const UPDATE_CHARACTER_HEALTH_MUTATION = `
+  mutation UpdateCharacterHealth($id: ID!, $health: Int!) {
+    updateCharacterHealth(id: $id, health: $health) {
+      character { id health }
+      errors
+    }
+  }
+`
+
+export const UPDATE_CHARACTER_MANA_MUTATION = `
+  mutation UpdateCharacterMana($id: ID!, $mana: Int!) {
+    updateCharacterMana(id: $id, mana: $mana) {
+      character { id mana }
+      errors
     }
   }
 `

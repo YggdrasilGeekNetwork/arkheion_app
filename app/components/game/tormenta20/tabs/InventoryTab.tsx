@@ -795,7 +795,7 @@ export default function InventoryTab({
                   setEditingCurrency('to')
                 }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { setEditCurrencyValue(character.currencies.to.toString()); setEditingCurrency('to') } }}
-                className="bg-card-muted border border-stroke rounded p-1.5 h-[70px] flex flex-col hover:border-accent transition-colors cursor-pointer"
+                className="bg-card-muted border border-stroke rounded p-2 h-[70px] flex flex-col hover:border-accent transition-colors cursor-pointer"
               >
                 <div className="font-semibold text-xs text-yellow-600">Ouro (TO)</div>
                 <div className="text-lg font-bold text-yellow-600 mt-0.5">{character.currencies.to}</div>
@@ -815,7 +815,7 @@ export default function InventoryTab({
                   setEditingCurrency('tp')
                 }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { setEditCurrencyValue(character.currencies.tp.toString()); setEditingCurrency('tp') } }}
-                className="bg-card-muted border border-stroke rounded p-1.5 h-[70px] flex flex-col hover:border-accent transition-colors cursor-pointer"
+                className="bg-card-muted border border-stroke rounded p-2 h-[70px] flex flex-col hover:border-accent transition-colors cursor-pointer"
               >
                 <div className="font-semibold text-xs text-gray-300">Prata (TP)</div>
                 <div className="text-lg font-bold text-gray-300 mt-0.5">{character.currencies.tp}</div>
@@ -835,7 +835,7 @@ export default function InventoryTab({
                   setEditingCurrency('tc')
                 }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { setEditCurrencyValue(character.currencies.tc.toString()); setEditingCurrency('tc') } }}
-                className="bg-card-muted border border-stroke rounded p-1.5 h-[70px] flex flex-col hover:border-accent transition-colors cursor-pointer"
+                className="bg-card-muted border border-stroke rounded p-2 h-[70px] flex flex-col hover:border-accent transition-colors cursor-pointer"
               >
                 <div className="font-semibold text-xs text-orange-700">Cobre (TC)</div>
                 <div className="text-lg font-bold text-orange-700 mt-0.5">{character.currencies.tc}</div>
@@ -869,7 +869,7 @@ export default function InventoryTab({
                       }
                     }}
                     onDrop={() => handleDrop(slotKey, 'backpack')}
-                    className={`bg-card-muted border border-stroke rounded p-1.5 h-[70px] flex flex-col hover:bg-card transition-colors relative group cursor-move hover:border-accent ${
+                    className={`bg-card-muted border border-stroke rounded p-2 h-[70px] flex flex-col hover:bg-card transition-colors relative group cursor-move hover:border-accent ${
                       isDragging ? 'opacity-50' : ''
                     }`}
                   >
