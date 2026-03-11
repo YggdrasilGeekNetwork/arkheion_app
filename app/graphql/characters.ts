@@ -136,6 +136,15 @@ export const UPDATE_CHARACTER_MANA_MUTATION = `
   }
 `
 
+export const UPDATE_CHARACTER_CURRENCIES_MUTATION = `
+  mutation UpdateCharacterCurrencies($id: ID!, $currencies: CurrenciesInput!) {
+    updateCharacterCurrencies(id: $id, currencies: $currencies) {
+      character { id currencies { tc tp to } }
+      errors
+    }
+  }
+`
+
 export const GET_CHARACTERS_QUERY = `
   query GetCharacters {
     characters {
@@ -150,3 +159,18 @@ export const GET_CHARACTERS_QUERY = `
     }
   }
 `
+
+export const WIZARD_DATA_QUERY = `
+  query WizardData {
+    rulebook {
+      racas { id name description size movement attributeBonuses racialAbilities }
+      classes { id name description hitPoints manaPoints skills proficiencies abilities spellcasting }
+      origens { id name description benefits uniquePower }
+      divindades { id name title description energy preferredWeapon grantedPowers obligationsRestrictions beliefsObjectives }
+      racialPowers: poderes(kind: "habilidade_de_raca") { id name description effects }
+      classPowers: poderes(kind: "poder_classe") { id name description }
+      deityPowers: poderes(kind: "poder_concedido") { id name description effects }
+    }
+  }
+`
+

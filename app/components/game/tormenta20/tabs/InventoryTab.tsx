@@ -784,7 +784,7 @@ export default function InventoryTab({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-1.5 content-start overflow-y-auto flex-1 pb-2" style={{ minHeight: 0 }}>
+          <div className="grid grid-cols-3 gap-1.5 content-start overflow-y-auto flex-1" style={{ minHeight: 0 }}>
             {/* Gold Coins Card */}
             {character.currencies.to > 0 && (
               <div

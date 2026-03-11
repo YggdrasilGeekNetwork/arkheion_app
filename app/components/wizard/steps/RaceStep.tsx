@@ -122,15 +122,10 @@ export default function RaceStep() {
             <div className="space-y-2">
               {selectedRaceData.abilities.map(ability => (
                 <div key={ability.id} className="bg-card border border-stroke rounded p-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{ability.name}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      ability.type === 'active' ? 'bg-accent/20 text-accent' : 'bg-card-muted text-muted'
-                    }`}>
-                      {ability.type === 'active' ? 'Ativa' : 'Passiva'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted mt-1">{ability.description}</p>
+                  <span className="text-sm font-medium">{ability.name}</span>
+                  {ability.description && (
+                    <p className="text-xs text-muted mt-1">{ability.description}</p>
+                  )}
                 </div>
               ))}
             </div>

@@ -18,27 +18,16 @@ export default function DeityStep() {
 
   const [expandedPower, setExpandedPower] = useState<string | null>(null)
 
-  // Check if any selected class has the "devoto" ability or requires divine connection
+  // Classes with "Devoto" ability require a deity or pantheon selection
   const classesWithDevoto = selectedClasses.filter(cls => {
     const classData = allClasses.find(c => c.id === cls.id)
     return classData?.abilities.some(
-      ability => ability.name.toLowerCase().includes('devoto') ||
-                 ability.name.toLowerCase().includes('poder divino') ||
-                 ability.name.toLowerCase().includes('magia divina')
+      ability => ability.name.toLowerCase().includes('devoto')
     )
   })
 
   const hasDevoto = classesWithDevoto.length > 0
-
-  // Classes that REQUIRE a deity or pantheon selection
-  const requiresDeityOrPantheon = selectedClasses.some(cls => {
-    const classData = allClasses.find(c => c.id === cls.id)
-    // Clérigo and similar classes require a deity/pantheon
-    return classData?.abilities.some(
-      ability => ability.name.toLowerCase().includes('magia divina') ||
-                 ability.name.toLowerCase().includes('poder divino')
-    )
-  })
+  const requiresDeityOrPantheon = hasDevoto
 
   // Number of powers the character can select
   const maxPowers = hasDevoto ? 2 : 1
@@ -51,7 +40,6 @@ export default function DeityStep() {
 
   const handleSelectDeity = (deityData: DeityData | typeof PANTHEON_OPTION) => {
     if (deity?.id === deityData.id) {
-      // Deselect only if not required
       if (!requiresDeityOrPantheon) {
         dispatch({ type: 'SELECT_DEITY', payload: null })
       }
@@ -68,13 +56,11 @@ export default function DeityStep() {
 
   const handleTogglePower = (powerId: string) => {
     if (selectedPowers.includes(powerId)) {
-      // Remove power
       dispatch({
         type: 'SET_SELECTED_POWERS',
         payload: selectedPowers.filter(p => p !== powerId),
       })
     } else if (selectedPowers.length < maxPowers) {
-      // Add power
       dispatch({
         type: 'SET_SELECTED_POWERS',
         payload: [...selectedPowers, powerId],
@@ -120,16 +106,13 @@ export default function DeityStep() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium">{power.name}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded ${
-                  power.type === 'active'
-                    ? 'bg-accent/20 text-accent'
-                    : 'bg-card-muted text-muted'
-                }`}>
-                  {power.type === 'active' ? 'Ativa' : 'Passiva'}
-                </span>
-                {power.actionType && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400">
-                    {power.actionType}
+                {power.type && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    power.type === 'active'
+                      ? 'bg-accent/20 text-accent'
+                      : 'bg-card-muted text-muted'
+                  }`}>
+                    {power.type === 'active' ? 'Ativa' : 'Passiva'}
                   </span>
                 )}
                 {power.cost?.pm && (
@@ -139,23 +122,25 @@ export default function DeityStep() {
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setExpandedPower(isExpanded ? null : power.id)}
-                className="text-sm text-muted hover:text-text mt-1 flex items-center gap-1"
-              >
-                <span className={`line-clamp-1 ${isExpanded ? 'line-clamp-none' : ''}`}>
-                  {power.description}
-                </span>
-                <svg
-                  className={`w-4 h-4 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+              {power.description && (
+                <button
+                  type="button"
+                  onClick={() => setExpandedPower(isExpanded ? null : power.id)}
+                  className="text-sm text-muted hover:text-text mt-1 flex items-center gap-1 w-full text-left"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+                  <span className={isExpanded ? '' : 'line-clamp-1'}>
+                    {power.description}
+                  </span>
+                  <svg
+                    className={`w-4 h-4 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -220,14 +205,8 @@ export default function DeityStep() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted line-clamp-2">{d.description}</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {d.domains.map(domain => (
-                      <span key={domain} className="text-xs bg-card-muted px-1.5 py-0.5 rounded">
-                        {domain}
-                      </span>
-                    ))}
-                  </div>
+                  {d.title && <p className="text-xs text-accent">{d.title}</p>}
+                  <p className="text-xs text-muted line-clamp-2 mt-0.5">{d.description}</p>
                 </div>
               </div>
             </button>
@@ -235,7 +214,7 @@ export default function DeityStep() {
         })}
       </div>
 
-      {/* Pantheon option - for divine classes that want to serve all gods */}
+      {/* Pantheon option */}
       <button
         type="button"
         onClick={() => handleSelectDeity(PANTHEON_OPTION)}
@@ -259,14 +238,11 @@ export default function DeityStep() {
               )}
             </div>
             <p className="text-xs text-muted">{PANTHEON_OPTION.description}</p>
-            <p className="text-xs text-muted mt-1">
-              Você não recebe poderes concedidos específicos, mas pode canalizar energia positiva ou negativa conforme a necessidade.
-            </p>
           </div>
         </div>
       </button>
 
-      {/* No deity option - only available if class doesn't require it */}
+      {/* No deity option */}
       {!requiresDeityOrPantheon && (
         <button
           type="button"
@@ -294,15 +270,17 @@ export default function DeityStep() {
         <div className="bg-card border border-stroke rounded-lg overflow-hidden">
           <div className="bg-card-muted px-4 py-3 border-b border-stroke">
             <h3 className="font-semibold">{selectedDeity.name}</h3>
-            <p className="text-sm text-muted">{selectedDeity.alignment}</p>
+            {selectedDeity.title && <p className="text-sm text-muted">{selectedDeity.title}</p>}
           </div>
 
           <div className="p-4 space-y-4">
-            {/* Values */}
-            <div>
-              <h4 className="text-sm font-medium text-muted mb-1">Valores</h4>
-              <p className="text-sm">{selectedDeity.values}</p>
-            </div>
+            {/* Description / Beliefs */}
+            {selectedDeity.beliefsObjectives && (
+              <div>
+                <h4 className="text-sm font-medium text-muted mb-1">Valores e Objetivos</h4>
+                <p className="text-sm">{selectedDeity.beliefsObjectives}</p>
+              </div>
+            )}
 
             {/* Energy & Weapon */}
             <div className="grid grid-cols-2 gap-4">
@@ -312,40 +290,24 @@ export default function DeityStep() {
                   selectedDeity.energy === 'positiva' ? 'text-yellow-500' : 'text-purple-500'
                 }`}>
                   {selectedDeity.energy === 'positiva' ? '☀️' : '🌙'}
-                  {selectedDeity.energy === 'positiva' ? 'Positiva' : 'Negativa'}
+                  {selectedDeity.energy === 'positiva' ? 'Positiva' : selectedDeity.energy === 'negativa' ? 'Negativa' : selectedDeity.energy}
                 </span>
               </div>
+              {selectedDeity.preferredWeapon && (
+                <div>
+                  <h4 className="text-sm font-medium text-muted mb-1">Arma Favorita</h4>
+                  <p className="text-sm">{selectedDeity.preferredWeapon}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Obligations & Restrictions */}
+            {selectedDeity.obligationsRestrictions && (
               <div>
-                <h4 className="text-sm font-medium text-muted mb-1">Arma Favorita</h4>
-                <p className="text-sm">{selectedDeity.favoriteWeapon}</p>
+                <h4 className="text-sm font-medium text-muted mb-1">Obrigações & Restrições</h4>
+                <p className="text-sm text-muted whitespace-pre-line">{selectedDeity.obligationsRestrictions}</p>
               </div>
-            </div>
-
-            {/* Obligations */}
-            <div>
-              <h4 className="text-sm font-medium text-muted mb-1">Obrigações</h4>
-              <ul className="text-sm space-y-1">
-                {selectedDeity.obligations.map((obligation, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-accent">•</span>
-                    <span>{obligation}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Restrictions */}
-            <div>
-              <h4 className="text-sm font-medium text-muted mb-1">Restrições</h4>
-              <ul className="text-sm space-y-1">
-                {selectedDeity.restrictions.map((restriction, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-red-500">•</span>
-                    <span>{restriction}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
 
             {/* Granted Powers */}
             <div>
@@ -358,7 +320,7 @@ export default function DeityStep() {
                 </span>
               </div>
               <div className="space-y-2">
-                {selectedDeity.powers.map(power => (
+                {selectedDeity.grantedPowers.map(power => (
                   <PowerCard
                     key={power.id}
                     power={power}
@@ -376,60 +338,13 @@ export default function DeityStep() {
         <div className="bg-card border border-stroke rounded-lg overflow-hidden">
           <div className="bg-card-muted px-4 py-3 border-b border-stroke">
             <h3 className="font-semibold">Devoto do Panteão</h3>
-            <p className="text-sm text-muted">Neutro</p>
           </div>
-
-          <div className="p-4 space-y-4">
-            <div>
-              <h4 className="text-sm font-medium text-muted mb-1">Descrição</h4>
-              <p className="text-sm">
-                Como devoto do Panteão, você serve a todos os deuses de Arton igualmente.
-                Você busca manter o equilíbrio entre as forças divinas e pode invocar
-                qualquer deus conforme a situação exigir.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h4 className="text-sm font-medium text-muted mb-1">Energia</h4>
-                <span className="inline-flex items-center gap-1 text-sm text-muted">
-                  ☀️/🌙 Positiva ou Negativa
-                </span>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-muted mb-1">Arma Favorita</h4>
-                <p className="text-sm">Qualquer</p>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-medium text-muted mb-1">Obrigações</h4>
-              <ul className="text-sm space-y-1">
-                <li className="flex items-start gap-2">
-                  <span className="text-accent">•</span>
-                  <span>Respeitar todos os deuses igualmente.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-accent">•</span>
-                  <span>Manter o equilíbrio entre as forças divinas.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-medium text-muted mb-1">Restrições</h4>
-              <ul className="text-sm space-y-1">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500">•</span>
-                  <span>Nunca desrespeitar ou profanar qualquer divindade.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-card-muted rounded-lg p-3 text-sm text-muted">
-              <strong>Nota:</strong> Devotos do Panteão não escolhem poderes concedidos específicos.
-              Em vez disso, você pode canalizar energia positiva ou negativa conforme a necessidade da situação.
-            </div>
+          <div className="p-4">
+            <p className="text-sm text-muted">
+              Como devoto do Panteão, você serve a todos os deuses de Arton igualmente.
+              Você pode canalizar energia positiva ou negativa conforme a necessidade.
+              Sua única Obrigação & Restrição é não usar armas cortantes ou perfurantes.
+            </p>
           </div>
         </div>
       )}
@@ -448,23 +363,16 @@ export default function DeityStep() {
                 <span className="text-muted">Poderes:</span>{' '}
                 <span className="font-medium">
                   {selectedPowers
-                    .map(id => selectedDeity.powers.find(p => p.id === id)?.name)
+                    .map(id => selectedDeity.grantedPowers.find(p => p.id === id)?.name)
                     .filter(Boolean)
                     .join(', ')}
                 </span>
-              </p>
-            )}
-            {isPantheonSelected && (
-              <p>
-                <span className="text-muted">Energia:</span>{' '}
-                <span className="font-medium">Positiva ou Negativa (à escolha)</span>
               </p>
             )}
           </div>
         </div>
       )}
 
-      {/* Info note */}
       <div className="bg-card-muted border border-stroke rounded-lg p-3 text-xs text-muted">
         <strong>Nota:</strong> Seguidores de uma divindade devem respeitar suas obrigações e restrições.
         Violar esses preceitos pode resultar na perda de poderes divinos.

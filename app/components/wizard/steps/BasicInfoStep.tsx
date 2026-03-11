@@ -4,10 +4,8 @@ import { useWizard } from '~/contexts/WizardContext'
 type UploadState = 'idle' | 'uploading' | 'error'
 
 export default function BasicInfoStep() {
-  const { state, dispatch, loaderData } = useWizard()
-  const { name, imageUrl, origin } = state.data
-
-  const origins = loaderData?.origins || []
+  const { state, dispatch } = useWizard()
+  const { name, imageUrl } = state.data
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadState, setUploadState] = useState<UploadState>('idle')
@@ -63,9 +61,9 @@ export default function BasicInfoStep() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold mb-2">Informações Básicas</h2>
+        <h2 className="text-xl font-bold mb-2">Toques Finais</h2>
         <p className="text-sm text-muted">
-          Defina o nome e as características básicas do seu personagem.
+          Escolha o nome e a imagem do seu personagem para finalizar a criação.
         </p>
       </div>
 
@@ -142,53 +140,7 @@ export default function BasicInfoStep() {
           )}
         </div>
 
-        {/* Origin */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">
-            Origem <span className="text-muted text-xs">(opcional)</span>
-          </label>
-          <select
-            value={origin?.id || ''}
-            onChange={(e) => {
-              const selectedOrigin = origins.find(o => o.id === e.target.value)
-              dispatch({
-                type: 'SELECT_ORIGIN',
-                payload: selectedOrigin ? { id: selectedOrigin.id, name: selectedOrigin.name } : null,
-              })
-            }}
-            className="w-full px-3 py-2 bg-card-muted border border-stroke rounded-lg focus:border-accent focus:outline-none"
-          >
-            <option value="">Nenhuma</option>
-            {origins.map(o => (
-              <option key={o.id} value={o.id}>{o.name}</option>
-            ))}
-          </select>
-          {origin && (
-            <p className="mt-1 text-xs text-muted">
-              {origins.find(o => o.id === origin.id)?.description}
-            </p>
-          )}
-        </div>
       </div>
-
-      {/* Summary */}
-      {origin && (
-        <div className="bg-card-muted border border-stroke rounded-lg p-4">
-          <h3 className="text-sm font-semibold mb-2">Bônus da Origem</h3>
-          <div className="text-sm text-muted">
-            {origins.find(o => o.id === origin.id)?.skillBonuses?.map(bonus => (
-              <span key={bonus.skill} className="inline-block mr-3">
-                <span className="text-accent">+{bonus.value}</span> {bonus.skill}
-              </span>
-            ))}
-            {origins.find(o => o.id === origin.id)?.startingGold && (
-              <span className="inline-block">
-                <span className="text-accent">{origins.find(o => o.id === origin.id)?.startingGold}</span> TO inicial
-              </span>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

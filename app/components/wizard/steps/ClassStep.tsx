@@ -65,7 +65,7 @@ export default function ClassStep() {
                     <span className="font-medium">{cls.name}</span>
                     {classData && (
                       <span className="text-xs text-muted ml-2">
-                        (d{classData.hitDie} PV)
+                        (+{classData.hpPerLevel} PV/nível)
                       </span>
                     )}
                   </div>
@@ -150,10 +150,7 @@ export default function ClassStep() {
                     {/* Class info */}
                     <div className="mt-2 flex flex-wrap gap-2 text-xs">
                       <span className="bg-card-muted px-1.5 py-0.5 rounded">
-                        d{cls.hitDie} PV
-                      </span>
-                      <span className="bg-card-muted px-1.5 py-0.5 rounded">
-                        {cls.primaryAttributes.join('/')}
+                        +{cls.hpPerLevel} PV/nível
                       </span>
                       {cls.spellcasting && (
                         <span className="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded">
@@ -192,10 +189,10 @@ export default function ClassStep() {
             <div>
               <h4 className="text-sm font-medium text-muted mb-2">Proficiências</h4>
               <div className="space-y-1 text-sm">
-                {previewingClass.proficiencies.armor.length > 0 && (
+                {previewingClass.proficiencies.armors.length > 0 && (
                   <div>
                     <span className="text-muted">Armaduras: </span>
-                    <span>{previewingClass.proficiencies.armor.join(', ')}</span>
+                    <span>{previewingClass.proficiencies.armors.join(', ')}</span>
                   </div>
                 )}
                 <div>
@@ -217,23 +214,16 @@ export default function ClassStep() {
 
           {/* Abilities */}
           <div>
-            <h4 className="text-sm font-medium text-muted mb-2">Habilidades de Nível 1</h4>
+            <h4 className="text-sm font-medium text-muted mb-2">Habilidades</h4>
             <div className="space-y-2">
-              {previewingClass.abilities
-                .filter(a => a.level === 1)
-                .map(ability => (
-                  <div key={ability.id} className="bg-card-muted border border-stroke rounded p-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{ability.name}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        ability.type === 'active' ? 'bg-accent/20 text-accent' : 'bg-card-muted text-muted'
-                      }`}>
-                        {ability.type === 'active' ? 'Ativa' : 'Passiva'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted mt-1">{ability.description}</p>
-                  </div>
-                ))}
+              {previewingClass.abilities.map(ability => (
+                <div key={ability.id} className="bg-card-muted border border-stroke rounded p-2">
+                  <span className="text-sm font-medium">{ability.name}</span>
+                  {ability.description && (
+                    <p className="text-xs text-muted mt-1 line-clamp-2">{ability.description}</p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -255,8 +245,6 @@ export default function ClassStep() {
             const classData = allClasses.find(c => c.id === selectedClasses[0].id)
             if (!classData) return null
 
-            const currentLevel = selectedClasses[0].level
-
             return (
               <>
                 <h3 className="font-semibold">Detalhes: {classData.name}</h3>
@@ -266,10 +254,10 @@ export default function ClassStep() {
                   <div>
                     <h4 className="text-sm font-medium text-muted mb-2">Proficiências</h4>
                     <div className="space-y-1 text-sm">
-                      {classData.proficiencies.armor.length > 0 && (
+                      {classData.proficiencies.armors.length > 0 && (
                         <div>
                           <span className="text-muted">Armaduras: </span>
-                          <span>{classData.proficiencies.armor.join(', ')}</span>
+                          <span>{classData.proficiencies.armors.join(', ')}</span>
                         </div>
                       )}
                       <div>
@@ -291,24 +279,16 @@ export default function ClassStep() {
 
                 {/* Abilities */}
                 <div>
-                  <h4 className="text-sm font-medium text-muted mb-2">Habilidades até Nível {currentLevel}</h4>
+                  <h4 className="text-sm font-medium text-muted mb-2">Habilidades</h4>
                   <div className="space-y-2">
-                    {classData.abilities
-                      .filter(a => a.level <= currentLevel)
-                      .map(ability => (
-                        <div key={ability.id} className="bg-card border border-stroke rounded p-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{ability.name}</span>
-                            <span className="text-xs text-muted">Nv. {ability.level}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              ability.type === 'active' ? 'bg-accent/20 text-accent' : 'bg-card-muted text-muted'
-                            }`}>
-                              {ability.type === 'active' ? 'Ativa' : 'Passiva'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted mt-1">{ability.description}</p>
-                        </div>
-                      ))}
+                    {classData.abilities.map(ability => (
+                      <div key={ability.id} className="bg-card border border-stroke rounded p-2">
+                        <span className="text-sm font-medium">{ability.name}</span>
+                        {ability.description && (
+                          <p className="text-xs text-muted mt-1 line-clamp-2">{ability.description}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </>

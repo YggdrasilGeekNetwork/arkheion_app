@@ -9,7 +9,7 @@ export default function EquipmentStep() {
   const equipmentChoices = getChoicesForStep('equipment')
 
   const selectedOrigin = origin ? origins.find(o => o.id === origin.id) : null
-  const startingGold = selectedOrigin?.startingGold || 100
+  const startingGold = 100 // Default; T20 starting gold depends on class/origin
 
   const handleMethodChange = (method: typeof equipmentMethod) => {
     dispatch({ type: 'SET_EQUIPMENT_METHOD', payload: method })

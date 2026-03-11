@@ -6,6 +6,7 @@ import WizardNavigation from './WizardNavigation'
 import BasicInfoStep from './steps/BasicInfoStep'
 import RaceStep from './steps/RaceStep'
 import ClassStep from './steps/ClassStep'
+import OriginStep from './steps/OriginStep'
 import AttributesStep from './steps/AttributesStep'
 import DeityStep from './steps/DeityStep'
 import SkillsStep from './steps/SkillsStep'
@@ -29,14 +30,15 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
   } = useWizard()
 
   const steps = useMemo(() => [
-    { id: 'basic-info' as const, label: STEP_LABELS['basic-info'] },
+    { id: 'attributes' as const, label: STEP_LABELS['attributes'] },
     { id: 'race' as const, label: STEP_LABELS['race'] },
     { id: 'class' as const, label: STEP_LABELS['class'] },
-    { id: 'attributes' as const, label: STEP_LABELS['attributes'] },
+    { id: 'origin' as const, label: STEP_LABELS['origin'] },
     { id: 'deity' as const, label: STEP_LABELS['deity'] },
     { id: 'skills' as const, label: STEP_LABELS['skills'] },
     { id: 'abilities' as const, label: STEP_LABELS['abilities'] },
     { id: 'equipment' as const, label: STEP_LABELS['equipment'] },
+    { id: 'basic-info' as const, label: STEP_LABELS['basic-info'] },
   ], [])
 
   // Calculate pending choices counts for each step
@@ -72,14 +74,14 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
   // Render the current step component
   const renderStep = () => {
     switch (state.currentStep) {
-      case 'basic-info':
-        return <BasicInfoStep />
+      case 'attributes':
+        return <AttributesStep />
       case 'race':
         return <RaceStep />
       case 'class':
         return <ClassStep />
-      case 'attributes':
-        return <AttributesStep />
+      case 'origin':
+        return <OriginStep />
       case 'deity':
         return <DeityStep />
       case 'skills':
@@ -88,6 +90,8 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
         return <AbilitiesStep />
       case 'equipment':
         return <EquipmentStep />
+      case 'basic-info':
+        return <BasicInfoStep />
       default:
         return null
     }

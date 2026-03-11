@@ -13,18 +13,19 @@ import type {
 import { WIZARD_STEPS } from '~/types/wizard'
 
 const INITIAL_WIZARD_STATE: WizardState = {
-  currentStep: 'basic-info',
+  currentStep: WIZARD_STEPS[0],
   completedSteps: [],
   isSubmitting: false,
   errors: {
-    'basic-info': [],
+    'attributes': [],
     'race': [],
     'class': [],
-    'attributes': [],
+    'origin': [],
     'deity': [],
     'skills': [],
     'abilities': [],
     'equipment': [],
+    'basic-info': [],
   },
   pendingChoices: [],
   data: {

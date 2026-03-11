@@ -105,6 +105,13 @@ export async function updateMana(id: string, mana: number) {
   })
 }
 
+export async function updateCurrencies(id: string, currencies: { tc: number; tp: number; to: number }) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/currencies`, {
+    method: 'PATCH',
+    body: JSON.stringify(currencies),
+  })
+}
+
 export async function updateSensesVisibility(id: string, hiddenSenseNames: string[]) {
   return fetchApi<{ ok: boolean }>(`/characters/${id}/senses-visibility`, {
     method: 'PATCH',

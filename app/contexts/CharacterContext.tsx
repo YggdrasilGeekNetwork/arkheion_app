@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '~/store/hooks'
 import { characterActions } from '~/store/slices/characterSlice'
 import type { CharacterAction, CharacterState } from '~/reducers/characterReducer'
 import type { Character } from '~/types/character'
-import { updateCharacter, updateHealth, updateMana } from '~/utils/api'
+import { updateCharacter, updateHealth, updateMana, updateCurrencies } from '~/utils/api'
 import { useToast } from './ToastContext'
 
 type CharacterContextType = {
@@ -41,6 +41,8 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
             await updateHealth(characterId, update.health)
           } else if ('mana' in update && update.mana !== undefined) {
             await updateMana(characterId, update.mana)
+          } else if ('currencies' in update && update.currencies !== undefined) {
+            await updateCurrencies(characterId, update.currencies)
           } else {
             await updateCharacter(characterId, update)
           }
