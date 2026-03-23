@@ -31,8 +31,8 @@ export default function Stepper({
   const canNavigate = (stepId: string, index: number): boolean => {
     if (!allowNavigation) return false
     if (!onStepClick) return false
-    // Can navigate to completed steps or the step right after the last completed one
-    return completedSteps.includes(stepId) || index <= completedSteps.length
+    // Can navigate to any step that has been visited or is within reach
+    return completedSteps.includes(stepId) || index <= currentIndex + 1
   }
 
   return (
@@ -113,8 +113,8 @@ export default function Stepper({
                     index + 1
                   )}
 
-                  {/* Pending choices badge */}
-                  {pendingCount > 0 && status !== 'completed' && (
+                  {/* Pending choices badge — shown regardless of completion status */}
+                  {pendingCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-white text-xs rounded-full flex items-center justify-center">
                       {pendingCount}
                     </span>

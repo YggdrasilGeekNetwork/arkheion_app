@@ -9,7 +9,7 @@ import { useCharacter } from '~/contexts/CharacterContext'
 import { usePlayerCombatSocket } from '~/hooks/usePlayerCombatSocket'
 import { useSocketContext } from '~/contexts/SocketContext'
 import DiceRollDisplay from './DiceRollDisplay'
-import type { CombatAction, WeaponAttack, AvailableActions, ActiveEffect, EquipmentItem, Ability } from '~/types/character'
+import type { CombatAction, WeaponAttack, AvailableActions, ActiveEffect, EquipmentItem, Ability, CharacterNotesData } from '~/types/character'
 import type { LevelUpData } from '~/types/levelup'
 import { getTotalLevel } from '~/utils/tormenta20'
 import LevelUpModal from './levelup/LevelUpModal'
@@ -270,7 +270,7 @@ const CharacterSheetInner = ({ onBackToCharacters, mesaId }: CharacterSheetInner
     }
   }
 
-  const handleNotesChange = async (notes: string) => {
+  const handleNotesChange = async (notes: CharacterNotesData) => {
     await optimisticDispatch({ type: 'UPDATE_NOTES', payload: notes })
   }
 

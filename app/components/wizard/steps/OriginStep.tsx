@@ -1,11 +1,93 @@
+import { useState, useMemo } from 'react'
 import { useWizard } from '~/contexts/WizardContext'
+import { InlineChoiceResolver } from '../ChoiceResolver'
+import { checkPowerEligibility, buildIneligiblePowerOptions } from '~/lib/powerEligibility'
+import type { PowerPrerequisite, AttributeValues } from '~/types/wizard'
+
+// ── PowerList ─────────────────────────────────────────────────────────────────
+
+type Power = {
+  id: string
+  name: string
+  description?: string
+  prerequisites?: PowerPrerequisite[]
+}
+
+function PowerList({
+  powers,
+  attributes,
+  racialBonuses,
+  totalLevel,
+}: {
+  powers: Power[]
+  attributes: AttributeValues
+  racialBonuses: Array<{ attribute: string; value: number }>
+  totalLevel: number
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  return (
+    <div>
+      <h4 className="text-xs font-medium text-muted mb-1">Poderes</h4>
+      <div className="space-y-1">
+        {powers.map(power => {
+          const { eligible, reason } = checkPowerEligibility(power.prerequisites, attributes, racialBonuses, totalLevel)
+          return (
+            <button
+              key={power.id}
+              type="button"
+              onClick={() => setExpanded(expanded === power.id ? null : power.id)}
+              className={`w-full text-left px-3 py-2 border rounded-lg transition-colors ${
+                eligible
+                  ? 'bg-card border-stroke hover:border-accent/50'
+                  : 'bg-card border-stroke opacity-45'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-medium">{power.name}</span>
+                  {!eligible && (
+                    <span className="text-xs text-red-400 flex-shrink-0">✕</span>
+                  )}
+                </div>
+                {(power.description || reason) && (
+                  <span className="text-muted text-xs flex-shrink-0">{expanded === power.id ? '▲' : '▼'}</span>
+                )}
+              </div>
+              {expanded === power.id && (
+                <div className="mt-1.5 space-y-1">
+                  {!eligible && reason && (
+                    <p className="text-xs text-red-400">{reason}</p>
+                  )}
+                  {power.description && (
+                    <p className="text-xs text-muted leading-relaxed">{power.description}</p>
+                  )}
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── OriginStep ────────────────────────────────────────────────────────────────
 
 export default function OriginStep() {
-  const { state, dispatch, loaderData } = useWizard()
-  const { origin } = state.data
+  const { state, loaderData, selectOrigin, getChoicesForStep, resolveChoice } = useWizard()
+  const { origin, attributes } = state.data
+  const racialBonuses = state.computed.attributeBonuses
+  const totalLevel = state.computed.totalLevel || 1
 
   const origins = loaderData?.origins || []
   const selectedOriginData = origin ? origins.find(o => o.id === origin.id) : null
+  const originChoices = getChoicesForStep('origin')
+
+  const ineligibleOptionsByChoice = useMemo(
+    () => buildIneligiblePowerOptions(originChoices, attributes, racialBonuses, totalLevel),
+    [originChoices, attributes, racialBonuses, totalLevel]
+  )
 
   return (
     <div className="space-y-6">
@@ -23,11 +105,8 @@ export default function OriginStep() {
         <select
           value={origin?.id || ''}
           onChange={(e) => {
-            const selectedOrigin = origins.find(o => o.id === e.target.value)
-            dispatch({
-              type: 'SELECT_ORIGIN',
-              payload: selectedOrigin ? { id: selectedOrigin.id, name: selectedOrigin.name } : null,
-            })
+            const selected = origins.find(o => o.id === e.target.value)
+            selectOrigin(e.target.value || null, selected)
           }}
           className="w-full px-3 py-2 bg-card-muted border border-stroke rounded-lg focus:border-accent focus:outline-none"
         >
@@ -63,20 +142,24 @@ export default function OriginStep() {
               )}
 
               {selectedOriginData.powers.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-muted mb-1">Poderes</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedOriginData.powers.map(power => (
-                      <span key={power} className="text-xs bg-card border border-stroke px-2 py-0.5 rounded">
-                        {power}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <PowerList
+                  powers={selectedOriginData.powers}
+                  attributes={attributes}
+                  racialBonuses={racialBonuses}
+                  totalLevel={totalLevel}
+                />
               )}
             </>
           )}
         </div>
+      )}
+
+      {originChoices.length > 0 && (
+        <InlineChoiceResolver
+          choices={originChoices}
+          onResolve={resolveChoice}
+          ineligibleOptionsByChoice={ineligibleOptionsByChoice}
+        />
       )}
     </div>
   )

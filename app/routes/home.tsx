@@ -1,5 +1,6 @@
 import type { MetaFunction } from "@remix-run/node"
 import { Link } from "@remix-run/react"
+import AppHeader from "~/components/ui/AppHeader"
 
 export const meta: MetaFunction = () => {
   return [
@@ -10,6 +11,8 @@ export const meta: MetaFunction = () => {
 
 export default function Home() {
   return (
+    <div className="w-full flex flex-col">
+      <AppHeader />
     <div className="w-full max-w-6xl mx-auto px-4 py-8">
       <div className="text-center mb-12">
         <h1 className="text-5xl font-bold text-accent mb-4">ARKHEION</h1>
@@ -62,6 +65,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   )
 }

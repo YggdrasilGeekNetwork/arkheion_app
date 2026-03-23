@@ -1,14 +1,28 @@
 import { useWizard } from '~/contexts/WizardContext'
 import { InlineChoiceResolver } from '../ChoiceResolver'
+import type { AttributeValues } from '~/types/wizard'
+
+const ATTR_LABELS: Record<keyof AttributeValues, string> = {
+  FOR: 'Força', DES: 'Destreza', CON: 'Constituição',
+  INT: 'Inteligência', SAB: 'Sabedoria', CAR: 'Carisma',
+}
+
+function fmt(v: number): string {
+  return v >= 0 ? `+${v}` : `${v}`
+}
 
 export default function RaceStep() {
-  const { state, dispatch, loaderData, selectRace, getChoicesForStep, resolveChoice } = useWizard()
-  const { race } = state.data
+  const { state, loaderData, selectRace, getChoicesForStep, resolveChoice } = useWizard()
+  const { race, attributes } = state.data
+  const racialBonuses = state.computed.attributeBonuses
 
   const races = loaderData?.races || []
   const raceChoices = getChoicesForStep('race')
 
   const selectedRaceData = race ? races.find(r => r.id === race.id) : null
+
+  const getRacialBonus = (attr: string): number =>
+    racialBonuses.find(b => b.attribute === attr)?.value ?? 0
 
   const handleSelectRace = (raceId: string) => {
     const raceData = races.find(r => r.id === raceId)
@@ -110,7 +124,7 @@ export default function RaceStep() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-muted italic">Escolha entre os atributos abaixo</p>
+                  <p className="text-muted italic text-xs">Sem bônus fixos de atributo</p>
                 )}
               </div>
             </div>
@@ -139,6 +153,43 @@ export default function RaceStep() {
           choices={raceChoices}
           onResolve={resolveChoice}
         />
+      )}
+
+      {/* Attribute preview with racial bonuses */}
+      {selectedRaceData && (
+        <div className="bg-card-muted border border-stroke rounded-lg p-4">
+          <h3 className="text-sm font-semibold mb-3">
+            Seus atributos com os bônus de {selectedRaceData.name}
+          </h3>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-sm">
+            {(Object.keys(ATTR_LABELS) as Array<keyof AttributeValues>).map(attr => {
+              const base = attributes[attr]
+              const bonus = getRacialBonus(attr)
+              const total = base + bonus
+              return (
+                <div key={attr} className="bg-card border border-stroke rounded-lg p-2">
+                  <div className="text-xs text-muted mb-1">{attr}</div>
+                  <div className={`text-lg font-bold ${total >= 0 ? 'text-accent' : 'text-red-400'}`}>
+                    {fmt(total)}
+                  </div>
+                  {bonus !== 0 ? (
+                    <div className="text-xs mt-0.5 space-x-1">
+                      <span className="text-muted">{fmt(base)}</span>
+                      <span className={bonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                        {fmt(bonus)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted mt-0.5">{fmt(base)}</div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-xs text-muted mt-2">
+            Base (definido em Atributos) + bônus racial = total final
+          </p>
+        </div>
       )}
     </div>
   )

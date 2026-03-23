@@ -3,7 +3,22 @@ import { useAppDispatch, useAppSelector } from '~/store/hooks'
 import { characterActions } from '~/store/slices/characterSlice'
 import type { CharacterAction, CharacterState } from '~/reducers/characterReducer'
 import type { Character } from '~/types/character'
-import { updateCharacter, updateHealth, updateMana, updateCurrencies } from '~/utils/api'
+import {
+  updateEquipment,
+  updateAttributes,
+  updateResistances,
+  updateSkills,
+  updateWeapons,
+  updateActionsList,
+  updateAbilities,
+  updateSpells,
+  updateAvailableActions,
+  updateInitiativeRoll,
+  updateNotes,
+  updateHealth,
+  updateMana,
+  updateCurrencies,
+} from '~/utils/api'
 import { useToast } from './ToastContext'
 
 type CharacterContextType = {
@@ -43,8 +58,29 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
             await updateMana(characterId, update.mana)
           } else if ('currencies' in update && update.currencies !== undefined) {
             await updateCurrencies(characterId, update.currencies)
-          } else {
-            await updateCharacter(characterId, update)
+          } else if ('equippedItems' in update || 'backpack' in update) {
+            const char = reduxState.character!
+            await updateEquipment(characterId, update.equippedItems ?? char.equippedItems, update.backpack ?? char.backpack)
+          } else if ('attributes' in update && update.attributes !== undefined) {
+            await updateAttributes(characterId, update.attributes)
+          } else if ('resistances' in update && update.resistances !== undefined) {
+            await updateResistances(characterId, update.resistances)
+          } else if ('skills' in update && update.skills !== undefined) {
+            await updateSkills(characterId, update.skills)
+          } else if ('weapons' in update && update.weapons !== undefined) {
+            await updateWeapons(characterId, update.weapons)
+          } else if ('actionsList' in update && update.actionsList !== undefined) {
+            await updateActionsList(characterId, update.actionsList)
+          } else if ('abilities' in update && update.abilities !== undefined) {
+            await updateAbilities(characterId, update.abilities)
+          } else if ('spells' in update && update.spells !== undefined) {
+            await updateSpells(characterId, update.spells)
+          } else if ('availableActions' in update && update.availableActions !== undefined) {
+            await updateAvailableActions(characterId, update.availableActions)
+          } else if ('initiativeRoll' in update) {
+            await updateInitiativeRoll(characterId, update.initiativeRoll ?? null)
+          } else if ('notes' in update && update.notes !== undefined) {
+            await updateNotes(characterId, update.notes)
           }
           pendingUpdatesRef.current.delete(updateKey)
         } catch (error) {
@@ -57,7 +93,7 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
 
       pendingUpdatesRef.current.set(updateKey, timeout)
     },
-    [addToast, appDispatch]
+    [addToast, appDispatch, reduxState.character]
   )
 
   // Route CharacterAction to Redux slice actions
@@ -163,6 +199,14 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
             case 'UPDATE_WEAPONS':
               update = { weapons: action.payload }
               updateKey = `${character.id}-WEAPONS`
+              break
+            case 'UPDATE_ABILITIES':
+              update = { abilities: action.payload }
+              updateKey = `${character.id}-ABILITIES`
+              break
+            case 'UPDATE_SPELLS':
+              update = { spells: action.payload }
+              updateKey = `${character.id}-SPELLS`
               break
             case 'UPDATE_NOTES':
               update = { notes: action.payload }

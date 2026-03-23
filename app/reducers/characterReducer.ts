@@ -1,4 +1,4 @@
-import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability, Spell } from '~/types/character'
+import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability, Spell, CharacterNotesData } from '~/types/character'
 import type { LevelUpData } from '~/types/levelup'
 import { getModifierFromValue } from '~/types/levelup'
 
@@ -23,7 +23,7 @@ export type CharacterAction =
   | { type: 'UPDATE_ABILITIES'; payload: Ability[] }
   | { type: 'UPDATE_SPELLS'; payload: Spell[] }
   | { type: 'LEVEL_UP'; payload: LevelUpData }
-  | { type: 'UPDATE_NOTES'; payload: string }
+  | { type: 'UPDATE_NOTES'; payload: CharacterNotesData }
   | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; update: Partial<Character> } }
   | { type: 'REVERT_OPTIMISTIC'; payload: string }
   | { type: 'CONFIRM_OPTIMISTIC'; payload: string }

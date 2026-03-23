@@ -1,5 +1,6 @@
 import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node"
 import { Link, useLoaderData } from "@remix-run/react"
+import AppHeader from "~/components/ui/AppHeader"
 import { json } from "@remix-run/node"
 import type { CharacterSummary } from "~/types/character"
 import { requireUserToken } from "~/utils/session.server"
@@ -34,6 +35,8 @@ export default function Characters() {
   const { characters } = useLoaderData<typeof loader>()
 
   return (
+    <div className="w-full flex flex-col">
+      <AppHeader />
     <div className="w-full max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -113,6 +116,7 @@ export default function Characters() {
           ← Voltar para home
         </Link>
       </div>
+    </div>
     </div>
   )
 }

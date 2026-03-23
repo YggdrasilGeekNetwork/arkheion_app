@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useWizard } from '~/contexts/WizardContext'
 import { InlineChoiceResolver } from '../ChoiceResolver'
+import { buildIneligiblePowerOptions } from '~/lib/powerEligibility'
 
 type AbilityDisplay = {
   id: string
@@ -11,11 +12,18 @@ type AbilityDisplay = {
 
 export default function AbilitiesStep() {
   const { state, loaderData, getChoicesForStep, resolveChoice } = useWizard()
-  const { race, classes: selectedClasses } = state.data
+  const { race, classes: selectedClasses, attributes } = state.data
+  const racialBonuses = state.computed.attributeBonuses
+  const totalLevel = state.computed.totalLevel || 1
 
   const races = loaderData?.races || []
   const allClasses = loaderData?.classes || []
   const abilityChoices = getChoicesForStep('abilities')
+
+  const ineligibleOptionsByChoice = useMemo(
+    () => buildIneligiblePowerOptions(abilityChoices, attributes, racialBonuses, totalLevel),
+    [abilityChoices, attributes, racialBonuses, totalLevel]
+  )
 
   const [expandedAbility, setExpandedAbility] = useState<string | null>(null)
 
@@ -70,6 +78,7 @@ export default function AbilitiesStep() {
         <button
           type="button"
           onClick={() => ability.description && toggleExpand(ability.id)}
+          onMouseDown={e => e.preventDefault()}
           className="w-full text-left p-3 hover:bg-card-muted transition-colors"
         >
           <div className="flex items-start justify-between gap-2">
@@ -118,6 +127,7 @@ export default function AbilitiesStep() {
           <InlineChoiceResolver
             choices={abilityChoices}
             onResolve={resolveChoice}
+            ineligibleOptionsByChoice={ineligibleOptionsByChoice}
           />
         </div>
       )}

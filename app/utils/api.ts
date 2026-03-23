@@ -118,3 +118,84 @@ export async function updateSensesVisibility(id: string, hiddenSenseNames: strin
     body: JSON.stringify({ hiddenSenseNames }),
   })
 }
+
+export async function updateNotes(id: string, notes: unknown) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/notes`, {
+    method: 'PATCH',
+    body: JSON.stringify({ notes }),
+  })
+}
+
+export async function updateEquipment(
+  id: string,
+  equippedItems: unknown,
+  backpack: unknown[]
+) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/equipment`, {
+    method: 'PATCH',
+    body: JSON.stringify({ equippedItems, backpack }),
+  })
+}
+
+export async function updateAttributes(id: string, attributes: unknown[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/attributes`, {
+    method: 'PATCH',
+    body: JSON.stringify({ attributes }),
+  })
+}
+
+export async function updateResistances(id: string, resistances: unknown[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/resistances`, {
+    method: 'PATCH',
+    body: JSON.stringify({ resistances }),
+  })
+}
+
+export async function updateSkills(id: string, skills: unknown[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/skills`, {
+    method: 'PATCH',
+    body: JSON.stringify({ skills }),
+  })
+}
+
+export async function updateWeapons(id: string, weapons: unknown[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/weapons`, {
+    method: 'PATCH',
+    body: JSON.stringify({ weapons }),
+  })
+}
+
+export async function updateActionsList(id: string, actionsList: unknown[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/actions-list`, {
+    method: 'PATCH',
+    body: JSON.stringify({ actionsList }),
+  })
+}
+
+export async function updateAbilities(id: string, abilities: unknown[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/abilities`, {
+    method: 'PATCH',
+    body: JSON.stringify({ abilities }),
+  })
+}
+
+export async function updateSpells(id: string, spells: unknown[]) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/spells`, {
+    method: 'PATCH',
+    body: JSON.stringify({ spells }),
+  })
+}
+
+export async function updateAvailableActions(id: string, availableActions: unknown) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/available-actions`, {
+    method: 'PATCH',
+    body: JSON.stringify({ availableActions }),
+  })
+}
+
+export async function updateInitiativeRoll(id: string, initiativeRoll: number | null) {
+  return fetchApi<{ ok: boolean }>(`/characters/${id}/initiative`, {
+    method: 'PATCH',
+    body: JSON.stringify({ initiativeRoll }),
+  })
+}

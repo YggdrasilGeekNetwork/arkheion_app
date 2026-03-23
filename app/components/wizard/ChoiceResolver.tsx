@@ -91,9 +91,10 @@ export default function ChoiceResolver({
 type InlineChoiceResolverProps = {
   choices: PendingChoice[]
   onResolve: (choiceId: string, selectedOptions: string[]) => void
+  ineligibleOptionsByChoice?: Map<string, Map<string, string>>  // choiceId → (optionId → reason)
 }
 
-export function InlineChoiceResolver({ choices, onResolve }: InlineChoiceResolverProps) {
+export function InlineChoiceResolver({ choices, onResolve, ineligibleOptionsByChoice }: InlineChoiceResolverProps) {
   if (choices.length === 0) {
     return null
   }
@@ -120,6 +121,7 @@ export function InlineChoiceResolver({ choices, onResolve }: InlineChoiceResolve
             key={choice.id}
             choice={choice}
             onResolve={onResolve}
+            ineligibleOptions={ineligibleOptionsByChoice?.get(choice.id)}
           />
         ))}
       </div>

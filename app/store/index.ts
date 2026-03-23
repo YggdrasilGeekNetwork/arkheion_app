@@ -39,7 +39,7 @@ const rootReducer = combineReducers({
   encounters: encountersReducer,
   notes: notesReducer,
   character: characterReducer,
-  wizard: wizardReducer,
+  wizard: persistReducer({ key: 'wizard', storage, version: 1 }, wizardReducer),
 })
 
 export const store = configureStore({

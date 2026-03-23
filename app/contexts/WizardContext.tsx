@@ -12,6 +12,7 @@ import type {
   EquipmentSelection,
   RaceData,
   ClassData,
+  OriginData,
   WizardLoaderData,
 } from '~/types/wizard'
 import { WIZARD_STEPS } from '~/types/wizard'
@@ -122,6 +123,7 @@ type WizardContextType = {
   hasUnresolvedChoices: (step: WizardStep) => boolean
   resolveChoice: (choiceId: string, selectedOptions: string[]) => void
   selectRace: (race: RaceSelection | null, raceData?: RaceData) => void
+  selectOrigin: (originId: string | null, originData?: OriginData) => void
   addClass: (classData: ClassData, level?: number) => void
   removeClass: (classId: string) => void
   getPointBuyRemaining: () => number
@@ -243,19 +245,497 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
 
   const resolveChoice = useCallback((choiceId: string, selectedOptions: string[]) => {
     appDispatch(wizardActions.resolveChoice({ choiceId, selectedOptions }))
-  }, [appDispatch])
+
+    const choice = state.pendingChoices.find(c => c.id === choiceId)
+    if (!choice) return
+
+    if (choice.effectType === 'attribute-bonus') {
+      // Replace attribute bonuses from this choice source (preserve fixed racial bonuses)
+      const sourceBonusTag = `${choice.source}-attr-bonus`
+      const existingBonuses = state.computed.attributeBonuses.filter(b => b.source !== sourceBonusTag)
+      const newBonuses = selectedOptions.map(attr => ({ attribute: attr, value: 1, source: sourceBonusTag }))
+      appDispatch(wizardActions.updateComputed({ attributeBonuses: [...existingBonuses, ...newBonuses] }))
+    }
+
+    if (choice.effectType === 'skill-training') {
+      // Merge trained skills from this choice with any already trained
+      const sourceTag = choice.id
+      const otherSkills = state.data.trainedSkills.filter(
+        s => !state.pendingChoices.some(c => c.id === sourceTag && c.selectedOptions.includes(s))
+      )
+      appDispatch(wizardActions.setTrainedSkills([...otherSkills, ...selectedOptions]))
+    }
+
+    if (choice.effectType === 'skill-bonus') {
+      const sourceTag = choice.id
+      const bonusValue = choice.effectValue ?? 2
+      const existing = state.computed.skillBonuses.filter(b => b.source !== sourceTag)
+      const newBonuses = selectedOptions.map(skill => ({ skill, value: bonusValue, source: sourceTag }))
+      appDispatch(wizardActions.updateComputed({ skillBonuses: [...existing, ...newBonuses] }))
+    }
+
+    if (choice.effectType === 'versatil-mode') {
+      const subSource = `${choice.source}-versatil`
+      appDispatch(wizardActions.removePendingChoicesBySource(subSource))
+
+      const skillOptions = (loaderData?.skills || []).map(s => ({
+        id: s.name,
+        name: s.name,
+        description: `Atributo: ${s.attribute}`,
+      }))
+
+      if (selectedOptions[0] === 'two-skills') {
+        appDispatch(wizardActions.addPendingChoices([{
+          id: `${choice.source}-versatil-skills`,
+          type: 'multiple',
+          source: subSource,
+          sourceStep: 'skills',
+          title: 'Perícias Versáteis',
+          description: 'Escolha 2 perícias adicionais para treinar',
+          options: skillOptions,
+          minSelections: 2,
+          maxSelections: 2,
+          selectedOptions: [],
+          isResolved: false,
+        }]))
+      } else if (selectedOptions[0] === 'skill-and-power') {
+        const generalPowers = loaderData?.generalPowers || []
+        const powerOptions = generalPowers.map(p => ({ id: p.id, name: p.name, description: p.description }))
+        appDispatch(wizardActions.addPendingChoices([
+          {
+            id: `${choice.source}-versatil-skill`,
+            type: 'multiple',
+            source: subSource,
+            sourceStep: 'skills',
+            title: 'Perícia Versátil',
+            description: 'Escolha 1 perícia adicional para treinar',
+            options: skillOptions,
+            minSelections: 1,
+            maxSelections: 1,
+            selectedOptions: [],
+            isResolved: false,
+          },
+          {
+            id: `${choice.source}-versatil-power`,
+            type: 'multiple',
+            source: subSource,
+            sourceStep: 'abilities',
+            title: 'Poder Geral (Versátil)',
+            description: 'Escolha 1 poder geral',
+            options: powerOptions,
+            minSelections: 1,
+            maxSelections: 1,
+            selectedOptions: [],
+            isResolved: false,
+            availablePowers: generalPowers,
+          },
+        ]))
+      }
+    }
+
+    if (choice.effectType === 'memoria-postuma-mode') {
+      const subSource = `${choice.source}-memoria-postuma`
+      appDispatch(wizardActions.removePendingChoicesBySource(subSource))
+
+      const skillOptions = (loaderData?.skills || []).map(s => ({
+        id: s.name,
+        name: s.name,
+        description: `Atributo: ${s.attribute}`,
+      }))
+
+      if (selectedOptions[0] === 'trained-skill') {
+        appDispatch(wizardActions.addPendingChoices([{
+          id: `${choice.source}-memoria-skill`,
+          type: 'multiple',
+          source: subSource,
+          sourceStep: 'skills',
+          title: 'Memória Póstuma: Perícia',
+          description: 'Escolha 1 perícia para se tornar treinado (não precisa ser da sua classe)',
+          options: skillOptions,
+          minSelections: 1,
+          maxSelections: 1,
+          selectedOptions: [],
+          isResolved: false,
+        }]))
+      } else if (selectedOptions[0] === 'general-power') {
+        const generalPowers = loaderData?.generalPowers || []
+        const powerOptions = generalPowers.map(p => ({ id: p.id, name: p.name, description: p.description }))
+        appDispatch(wizardActions.addPendingChoices([{
+          id: `${choice.source}-memoria-power`,
+          type: 'multiple',
+          source: subSource,
+          sourceStep: 'abilities',
+          title: 'Memória Póstuma: Poder Geral',
+          description: 'Escolha 1 poder geral',
+          options: powerOptions,
+          minSelections: 1,
+          maxSelections: 1,
+          selectedOptions: [],
+          isResolved: false,
+          availablePowers: generalPowers,
+        }]))
+      } else if (selectedOptions[0] === 'racial-ability-other-race') {
+        const otherRaceAbilities = (loaderData?.races || [])
+          .filter(r => r.id !== 'osteon' && r.id !== 'humano')
+          .flatMap(r => r.abilities.map(a => ({
+            id: a.id,
+            name: `${a.name} (${r.name})`,
+            description: a.description,
+          })))
+        appDispatch(wizardActions.addPendingChoices([{
+          id: `${choice.source}-memoria-racial`,
+          type: 'multiple',
+          source: subSource,
+          sourceStep: 'abilities',
+          title: 'Memória Póstuma: Habilidade Racial',
+          description: 'Escolha 1 habilidade racial de outra raça humanoide',
+          options: otherRaceAbilities,
+          minSelections: 1,
+          maxSelections: 1,
+          selectedOptions: [],
+          isResolved: false,
+        }]))
+      }
+    }
+
+    if (choice.effectType === 'deformidade-mode') {
+      const subSource = `${choice.source}-deformidade`
+      appDispatch(wizardActions.removePendingChoicesBySource(subSource))
+      // Also clear previous skill bonuses from this deformidade
+      const existingSkillBonuses = state.computed.skillBonuses.filter(
+        b => !b.source.startsWith(`${choice.source}-deformidade`)
+      )
+      appDispatch(wizardActions.updateComputed({ skillBonuses: existingSkillBonuses }))
+
+      const skillOptions = (loaderData?.skills || []).map(s => ({
+        id: s.name,
+        name: s.name,
+        description: `Atributo: ${s.attribute}`,
+      }))
+
+      if (selectedOptions[0] === 'two-skill-bonuses') {
+        appDispatch(wizardActions.addPendingChoices([{
+          id: `${choice.source}-deformidade-skills`,
+          type: 'multiple',
+          source: subSource,
+          sourceStep: 'skills',
+          title: 'Deformidade: Bônus de Perícia',
+          description: 'Escolha 2 perícias para receber +2 em cada uma',
+          options: skillOptions,
+          minSelections: 2,
+          maxSelections: 2,
+          selectedOptions: [],
+          isResolved: false,
+          effectType: 'skill-bonus',
+          effectValue: 2,
+        }]))
+      } else if (selectedOptions[0] === 'skill-and-tormenta') {
+        const tormentaPowers = loaderData?.tormentaPowers || []
+        const tormentaOptions = tormentaPowers.map(p => ({ id: p.id, name: p.name, description: p.description }))
+        appDispatch(wizardActions.addPendingChoices([
+          {
+            id: `${choice.source}-deformidade-skill`,
+            type: 'multiple',
+            source: subSource,
+            sourceStep: 'skills',
+            title: 'Deformidade: Bônus de Perícia',
+            description: 'Escolha 1 perícia para receber +2',
+            options: skillOptions,
+            minSelections: 1,
+            maxSelections: 1,
+            selectedOptions: [],
+            isResolved: false,
+            effectType: 'skill-bonus',
+            effectValue: 2,
+          },
+          {
+            id: `${choice.source}-deformidade-tormenta`,
+            type: 'multiple',
+            source: subSource,
+            sourceStep: 'abilities',
+            title: 'Deformidade: Poder da Tormenta',
+            description: 'Escolha 1 poder da Tormenta',
+            options: tormentaOptions,
+            minSelections: 1,
+            maxSelections: 1,
+            selectedOptions: [],
+            isResolved: false,
+            availablePowers: tormentaPowers,
+          },
+        ]))
+      }
+    }
+
+    if (choice.effectType === 'caminho-do-arcanista') {
+      const path = selectedOptions[0] // 'bruxo' | 'feiticeiro' | 'mago'
+
+      // Remove ALL previously spawned dependsOn choices for this source (spells + linhagem)
+      const toRemove = state.pendingChoices.filter(
+        c => c.source === choice.source && c.dependsOn != null
+      )
+      toRemove.forEach(c => appDispatch(wizardActions.removePendingChoiceById(c.id)))
+
+      // Find the class definition to pull spell options (source is classData.name)
+      const classDef = loaderData?.classes.find(cls => cls.name === choice.source)
+      const spellChoiceDef = classDef?.choices?.find(ch => ch.id === `magias-iniciais-${path}`)
+      const linhagemDef = classDef?.choices?.find(ch => ch.id === 'linhagem-do-feiticeiro')
+
+      const toAdd: PendingChoice[] = []
+
+      if (spellChoiceDef) {
+        toAdd.push({
+          id: `${classDef!.id}-${spellChoiceDef.id}`,
+          type: spellChoiceDef.type,
+          source: choice.source,
+          sourceStep: spellChoiceDef.targetStep,
+          title: spellChoiceDef.title,
+          description: spellChoiceDef.description,
+          options: spellChoiceDef.options,
+          minSelections: spellChoiceDef.minSelections,
+          maxSelections: spellChoiceDef.maxSelections,
+          selectedOptions: [],
+          isResolved: false,
+          effectType: spellChoiceDef.effectType,
+          dependsOn: path,
+        })
+      }
+
+      if (path === 'feiticeiro' && linhagemDef) {
+        toAdd.push({
+          id: `${classDef!.id}-${linhagemDef.id}`,
+          type: linhagemDef.type,
+          source: choice.source,
+          sourceStep: linhagemDef.targetStep,
+          title: linhagemDef.title,
+          description: linhagemDef.description,
+          options: linhagemDef.options,
+          minSelections: linhagemDef.minSelections,
+          maxSelections: linhagemDef.maxSelections,
+          selectedOptions: [],
+          isResolved: false,
+          effectType: linhagemDef.effectType,
+          dependsOn: 'feiticeiro',
+        })
+      }
+
+      if (toAdd.length > 0) {
+        appDispatch(wizardActions.addPendingChoices(toAdd))
+      }
+    }
+
+    if (choice.effectType === 'linhagem-do-feiticeiro') {
+      const linhagem = selectedOptions[0] // 'draconico' | 'feerica' | 'rubra'
+
+      // Remove any previously spawned linhagem sub-choices for this source
+      const subChoiceIds = ['linhagem-draconico-elemento', 'linhagem-feerica-magia', 'linhagem-rubra-poder']
+      state.pendingChoices
+        .filter(c => c.source === choice.source && subChoiceIds.some(sid => c.id.endsWith(sid)))
+        .forEach(c => appDispatch(wizardActions.removePendingChoiceById(c.id)))
+
+      const classDef = loaderData?.classes.find(cls => cls.name === choice.source)
+      const subChoiceId = `linhagem-${linhagem}-${linhagem === 'draconico' ? 'elemento' : linhagem === 'feerica' ? 'magia' : 'poder'}`
+      const subDef = classDef?.choices?.find(ch => ch.id === subChoiceId)
+
+      if (subDef && classDef) {
+        appDispatch(wizardActions.addPendingChoices([{
+          id: `${classDef.id}-${subDef.id}`,
+          type: subDef.type,
+          source: choice.source,
+          sourceStep: subDef.targetStep,
+          title: subDef.title,
+          description: subDef.description,
+          options: subDef.options,
+          minSelections: subDef.minSelections,
+          maxSelections: subDef.maxSelections,
+          selectedOptions: [],
+          isResolved: false,
+          effectType: subDef.effectType,
+          dependsOn: linhagem,
+        }]))
+      }
+    }
+
+    if (choice.effectType === 'escola-de-magias') {
+      const schools = selectedOptions // e.g. ['abjur', 'evoc', 'trans']
+
+      // Remove any previously spawned dependsOn spell choice for this source
+      state.pendingChoices
+        .filter(c => c.source === choice.source && c.dependsOn != null)
+        .forEach(c => appDispatch(wizardActions.removePendingChoiceById(c.id)))
+
+      // Only spawn the spell choice once all required schools are selected
+      if (schools.length < choice.minSelections) return
+
+      const classDef = loaderData?.classes.find(cls => cls.name === choice.source)
+      if (!classDef) return
+
+      // Merge spell options from all selected schools, dedup by id, sort by name
+      const seen = new Set<string>()
+      const combinedOptions = schools
+        .flatMap(school => classDef.choices?.find(ch => ch.id === `magias-iniciais-${school}`)?.options ?? [])
+        .filter(opt => seen.has(opt.id) ? false : (seen.add(opt.id), true))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
+
+      if (combinedOptions.length === 0) return
+
+      // Use any per-school choice as a template for count/effectType
+      const templateDef = classDef.choices?.find(ch => ch.id === `magias-iniciais-${schools[0]}`)
+      if (!templateDef) return
+
+      appDispatch(wizardActions.addPendingChoices([{
+        id: `${classDef.id}-magias-iniciais`,
+        type: templateDef.type,
+        source: choice.source,
+        sourceStep: templateDef.targetStep,
+        title: 'Magias Iniciais',
+        description: `Escolha ${templateDef.minSelections} magias de 1º círculo das escolas selecionadas`,
+        options: combinedOptions,
+        minSelections: templateDef.minSelections,
+        maxSelections: templateDef.maxSelections,
+        selectedOptions: [],
+        isResolved: false,
+        effectType: templateDef.effectType,
+        dependsOn: schools.join('|'),
+      }]))
+    }
+
+    if (choice.effectType === 'origem-mode') {
+      const mode = selectedOptions[0] // 'two-skills' | 'two-powers' | 'skill-and-power'
+      const subSource = `${choice.source}-origem-sub`
+
+      // Remove any previously spawned sub-choices for this origin
+      appDispatch(wizardActions.removePendingChoicesBySource(subSource))
+
+      const skillOptions = (choice.availableSkills || []).map(s => ({ id: s.id, name: s.name }))
+      const powerOptions = (choice.availablePowers || []).map(p => ({
+        id: p.id, name: p.name, description: p.description,
+      }))
+
+      const toAdd: PendingChoice[] = []
+      if (mode === 'two-skills') {
+        toAdd.push({
+          id: `${subSource}-skills`,
+          type: 'multiple',
+          source: subSource,
+          sourceStep: 'origin',
+          title: 'Escolha 2 Perícias da Origem',
+          description: 'Escolha 2 perícias da lista de benefícios da origem',
+          options: skillOptions,
+          minSelections: 2,
+          maxSelections: 2,
+          selectedOptions: [],
+          isResolved: false,
+        })
+      } else if (mode === 'two-powers') {
+        toAdd.push({
+          id: `${subSource}-powers`,
+          type: 'multiple',
+          source: subSource,
+          sourceStep: 'origin',
+          title: 'Escolha 2 Poderes da Origem',
+          description: 'Escolha 2 poderes da lista de benefícios da origem',
+          options: powerOptions,
+          minSelections: 2,
+          maxSelections: 2,
+          selectedOptions: [],
+          isResolved: false,
+          availablePowers: choice.availablePowers,
+        })
+      } else if (mode === 'skill-and-power') {
+        toAdd.push({
+          id: `${subSource}-skill`,
+          type: 'single',
+          source: subSource,
+          sourceStep: 'origin',
+          title: 'Escolha 1 Perícia da Origem',
+          description: 'Escolha 1 perícia da lista de benefícios da origem',
+          options: skillOptions,
+          minSelections: 1,
+          maxSelections: 1,
+          selectedOptions: [],
+          isResolved: false,
+        })
+        toAdd.push({
+          id: `${subSource}-power`,
+          type: 'single',
+          source: subSource,
+          sourceStep: 'origin',
+          title: 'Escolha 1 Poder da Origem',
+          description: 'Escolha 1 poder da lista de benefícios da origem',
+          options: powerOptions,
+          minSelections: 1,
+          maxSelections: 1,
+          selectedOptions: [],
+          isResolved: false,
+          availablePowers: choice.availablePowers,
+        })
+      }
+      if (toAdd.length > 0) {
+        appDispatch(wizardActions.addPendingChoices(toAdd))
+      }
+    }
+  }, [appDispatch, state.pendingChoices, state.computed.attributeBonuses, state.computed.skillBonuses, loaderData])
 
   const selectRace = useCallback((race: RaceSelection | null, raceData?: RaceData) => {
     if (state.data.race) {
-      appDispatch(wizardActions.removePendingChoicesBySource(state.data.race.name))
+      const prevName = state.data.race.name
+      appDispatch(wizardActions.removePendingChoicesBySource(prevName))
+      appDispatch(wizardActions.removePendingChoicesBySource(`${prevName}-versatil`))
+      appDispatch(wizardActions.removePendingChoicesBySource(`${prevName}-deformidade`))
+      appDispatch(wizardActions.removePendingChoicesBySource(`${prevName}-memoria-postuma`))
+      appDispatch(wizardActions.removePendingChoicesBySource(`${prevName}-attr-bonus`))
+      // Clear attribute bonuses from previous race
+      appDispatch(wizardActions.updateComputed({ attributeBonuses: [] }))
     }
     appDispatch(wizardActions.selectRace(race))
 
     if (race && raceData?.choices) {
+      const skillOptions = (loaderData?.skills || []).map(s => ({
+        id: s.name,
+        name: s.name,
+        description: `Atributo: ${s.attribute}`,
+      }))
       const newChoices: PendingChoice[] = raceData.choices.map(choice => ({
         id: `${race.id}-${choice.id}`,
         type: choice.type,
         source: race.name,
+        sourceStep: choice.targetStep,
+        title: choice.title,
+        description: choice.description,
+        // skill-training choices have options: [] from API; inject from loaderData
+        options: choice.effectType === 'skill-training' && choice.options.length === 0
+          ? skillOptions
+          : choice.options,
+        minSelections: choice.minSelections,
+        maxSelections: choice.maxSelections,
+        selectedOptions: [],
+        isResolved: false,
+        effectType: choice.effectType,
+      }))
+      appDispatch(wizardActions.addPendingChoices(newChoices))
+    }
+
+    if (raceData?.attributeBonuses && raceData.attributeBonuses.length > 0) {
+      appDispatch(wizardActions.updateComputed({
+        attributeBonuses: raceData.attributeBonuses.map(b => ({ ...b, source: race?.name || '' })),
+      }))
+    }
+  }, [state.data.race, appDispatch, loaderData])
+
+  const selectOrigin = useCallback((originId: string | null, originData?: OriginData) => {
+    if (state.data.origin) {
+      const prevSource = state.data.origin.name
+      appDispatch(wizardActions.removePendingChoicesBySource(prevSource))
+      appDispatch(wizardActions.removePendingChoicesBySource(`${prevSource}-origem-sub`))
+    }
+
+    appDispatch(wizardActions.selectOrigin(originId ? { id: originId, name: originData?.name || originId } : null))
+
+    if (originId && originData?.choices) {
+      const newChoices: PendingChoice[] = originData.choices.map(choice => ({
+        id: `${originId}-${choice.id}`,
+        type: choice.type,
+        source: originData.name,
         sourceStep: choice.targetStep,
         title: choice.title,
         description: choice.description,
@@ -264,16 +744,13 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
         maxSelections: choice.maxSelections,
         selectedOptions: [],
         isResolved: false,
+        effectType: choice.effectType,
+        availableSkills: choice.availableSkills,
+        availablePowers: choice.availablePowers,
       }))
       appDispatch(wizardActions.addPendingChoices(newChoices))
     }
-
-    if (raceData?.attributeBonuses) {
-      appDispatch(wizardActions.updateComputed({
-        attributeBonuses: raceData.attributeBonuses.map(b => ({ ...b, source: race?.name || '' })),
-      }))
-    }
-  }, [state.data.race, appDispatch])
+  }, [state.data.origin, appDispatch])
 
   const addClass = useCallback((classData: ClassData, level: number = 1) => {
     const classSelection: ClassSelection = { id: classData.id, name: classData.name, level }
@@ -297,8 +774,9 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
     }
 
     if (classData.choices) {
+      // Choices with dependsOn are spawned dynamically when their dependency is resolved
       const newChoices: PendingChoice[] = classData.choices
-        .filter(choice => !choice.level || choice.level <= level)
+        .filter(choice => (!choice.level || choice.level <= level) && !choice.dependsOn)
         .map(choice => ({
           id: `${classData.id}-${choice.id}`,
           type: choice.type,
@@ -311,6 +789,9 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
           maxSelections: choice.maxSelections,
           selectedOptions: [],
           isResolved: false,
+          effectType: choice.effectType,
+          effectValue: choice.effectValue,
+          dependsOn: choice.dependsOn,
         }))
       appDispatch(wizardActions.addPendingChoices(newChoices))
     }
@@ -356,6 +837,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
     hasUnresolvedChoices,
     resolveChoice,
     selectRace,
+    selectOrigin,
     addClass,
     removeClass,
     getPointBuyRemaining,
@@ -377,6 +859,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
     hasUnresolvedChoices,
     resolveChoice,
     selectRace,
+    selectOrigin,
     addClass,
     removeClass,
     getPointBuyRemaining,

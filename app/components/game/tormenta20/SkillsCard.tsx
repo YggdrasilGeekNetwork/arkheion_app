@@ -6,10 +6,6 @@ import Rollable from './Rollable'
 import { TORMENTA20_SKILLS } from '~/data/tormenta20Skills'
 import { getTotalLevel, getTrainingBonus, getHalfLevelBonus } from '~/utils/tormenta20'
 
-const ATTR_FULL_NAME: Record<string, string> = {
-  FOR: 'forca', DES: 'destreza', CON: 'constituicao',
-  INT: 'inteligencia', SAB: 'sabedoria', CAR: 'carisma',
-}
 
 type SkillsCardProps = {
   skills: Skill[]
@@ -38,19 +34,18 @@ export default function SkillsCard({
 
   const allSkills = useMemo(() => {
     return TORMENTA20_SKILLS.map(skillDef => {
-      const attrFull = ATTR_FULL_NAME[skillDef.attribute] || skillDef.attribute
       const apiSkill = skills.find(s => s.name.toLowerCase() === skillDef.name.toLowerCase())
-      const attributeObj = attributes.find(a => a.label === attrFull)
+      const attributeObj = attributes.find(a => a.label === skillDef.attribute)
       const attributeModifier = attributeObj?.modifier || 0
 
       if (apiSkill) {
-        return { ...apiSkill, name: skillDef.name, attribute: attrFull }
+        return { ...apiSkill, name: skillDef.name, attribute: skillDef.attribute }
       } else {
         return {
           name: skillDef.name,
           modifier: attributeModifier,
           trained: false,
-          attribute: attrFull,
+          attribute: skillDef.attribute,
           tooltip: skillDef.tooltip,
           visibleInSummary: false,
           visibleInCombat: false,
@@ -91,14 +86,13 @@ export default function SkillsCard({
       }
       onSkillsChange(newSkills)
     } else if (skillDef) {
-      const attrFull = ATTR_FULL_NAME[skillDef.attribute] || skillDef.attribute
-      const attributeObj = attributes.find(a => a.label === attrFull)
+      const attributeObj = attributes.find(a => a.label === skillDef.attribute)
       const apiSkill = skills.find(s => s.name.toLowerCase() === skillDef.name.toLowerCase())
       const newSkill: Skill = {
         name: skillDef.name,
         modifier: attributeObj?.modifier || 0,
         trained: apiSkill?.trained ?? false,
-        attribute: attrFull,
+        attribute: skillDef.attribute,
         tooltip: skillDef.tooltip,
         visibleInSummary: mode === 'summary',
         visibleInCombat: mode === 'combat',

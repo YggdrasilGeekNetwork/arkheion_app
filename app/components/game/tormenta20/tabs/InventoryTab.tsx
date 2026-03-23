@@ -104,14 +104,14 @@ export default function InventoryTab({
     otherHandItem: EquipmentItem
   } | null>(null)
 
-  // Calculate carry capacity: 10 + (2 × FOR modifier)
+  // Calculate carry capacity: 10 + 2/ponto positivo de FOR, -1/ponto negativo de FOR
   const forModifier = character.attributes.find(a => a.label === 'FOR')?.modifier || 0
-  const maxCarrySpaces = 10 + (2 * forModifier)
+  const maxCarrySpaces = 10 + (forModifier >= 0 ? forModifier * 2 : forModifier)
 
-  // Calculate current carry weight (spaces)
+  // Calculate current carry weight (spaces) — each item is one individual unit
   const calculateItemSpaces = (item: any) => {
     if (!item) return 0
-    return (item.spaces || 1) * (item.quantity || 1)
+    return item.spaces ?? 1
   }
 
   const equippedSpaces = Object.values(character.equippedItems)
@@ -120,10 +120,10 @@ export default function InventoryTab({
   const backpackItemSpaces = character.backpack
     .reduce((total, item) => total + calculateItemSpaces(item), 0)
 
-  // Calculate currency spaces: every 1000 coins of each type = 1 slot
-  const toSpaces = Math.ceil(character.currencies.to / 1000)
-  const tpSpaces = Math.ceil(character.currencies.tp / 1000)
-  const tcSpaces = Math.ceil(character.currencies.tc / 1000)
+  // Cada 1000 moedas de cada tipo ocupam 1 espaço (999 moedas = 0 espaços)
+  const toSpaces = Math.floor(character.currencies.to / 1000)
+  const tpSpaces = Math.floor(character.currencies.tp / 1000)
+  const tcSpaces = Math.floor(character.currencies.tc / 1000)
   const currencySpaces = toSpaces + tpSpaces + tcSpaces
 
   const backpackSpaces = backpackItemSpaces + currencySpaces
@@ -654,7 +654,7 @@ export default function InventoryTab({
         {/* Carry Weight Card */}
         <Card>
           <div className="flex items-center justify-between mb-2">
-            <Tooltip content={`Máximo: 10 + (2 × FOR ${forModifier >= 0 ? '+' : ''}${forModifier}) = ${maxCarrySpaces} espaços`} className="cursor-help">
+            <Tooltip content={`Máximo: 10 ${forModifier >= 0 ? `+ (2 × FOR +${forModifier})` : `− (FOR ${forModifier})`} = ${maxCarrySpaces} espaços`} className="cursor-help">
               <h3 className="text-lg font-bold">Capacidade de Carga <span className="opacity-50 text-sm">?</span></h3>
             </Tooltip>
             <div className="text-sm">
@@ -875,17 +875,15 @@ export default function InventoryTab({
                   >
                     <div className="font-semibold text-xs truncate" title={item!.name}>{item!.name}</div>
                     <div className="flex flex-wrap gap-x-1.5 mt-0.5 text-[10px] text-muted">
-                      {item!.quantity && item!.quantity > 1 && (
-                        <span>×{item!.quantity}</span>
-                      )}
-                      {item!.spaces && (
-                        <span>{item!.spaces * (item!.quantity || 1)} esp.</span>
+                      {item!.spaces != null && (
+                        <span>{item!.spaces} esp.</span>
                       )}
                       {item!.price && (
                         <span>{item!.price} TP</span>
                       )}
                     </div>
                     <button
+                      title="Soltar no chão"
                       className="absolute top-1 right-1 text-red-500 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity bg-card rounded px-1"
                       onClick={(e) => {
                         e.stopPropagation()
@@ -991,11 +989,57 @@ export default function InventoryTab({
                 {selectedBackpackItem.price && (
                   <span className="text-[10px] px-1.5 py-0.5 bg-card-muted rounded">{selectedBackpackItem.price} TP</span>
                 )}
-                {selectedBackpackItem.quantity && selectedBackpackItem.quantity > 1 && (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-card-muted rounded">×{selectedBackpackItem.quantity}</span>
-                )}
               </div>
             </div>
+
+            {/* Equip slot buttons */}
+            <div>
+              <div className="text-sm font-semibold mb-2">Equipar em:</div>
+              <div className="flex flex-wrap gap-2">
+                {(['rightHand', 'leftHand', 'quickDraw1', 'quickDraw2', 'slot1', 'slot2', 'slot3', 'slot4'] as const)
+                  .filter(slot => canEquipInSlot(selectedBackpackItem!, slot))
+                  .map(slot => (
+                    <button
+                      key={slot}
+                      onClick={() => {
+                        const newEquipped = { ...character.equippedItems }
+                        const newBackpack = [...character.backpack]
+                        const displacedItem = newEquipped[slot]
+                        newEquipped[slot] = selectedBackpackItem!
+                        newBackpack[selectedBackpackIndex!] = null
+                        if (displacedItem) {
+                          const emptyIdx = newBackpack.findIndex(i => !i)
+                          if (emptyIdx >= 0) {
+                            newBackpack[emptyIdx] = displacedItem
+                          } else {
+                            newBackpack.push(displacedItem)
+                          }
+                        }
+                        onEquippedItemsChange(newEquipped)
+                        onBackpackChange(newBackpack)
+                        setSelectedBackpackIndex(null)
+                      }}
+                      className="text-xs px-2 py-1 bg-accent/20 border border-accent/30 text-accent rounded hover:bg-accent/30 transition-colors"
+                    >
+                      {SLOT_LABELS[slot]}
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+
+            {/* Drop to ground */}
+            <button
+              onClick={() => {
+                const newBackpack = [...character.backpack]
+                newBackpack[selectedBackpackIndex!] = null
+                onBackpackChange(newBackpack)
+                setSelectedBackpackIndex(null)
+              }}
+              className="w-full py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded hover:bg-red-500/20 transition-colors text-sm"
+            >
+              Soltar no chão
+            </button>
 
             {selectedBackpackItem.effects && selectedBackpackItem.effects.length > 0 && (
               <div>
@@ -1542,7 +1586,7 @@ export default function InventoryTab({
 
             {/* Space info */}
             <div className="text-center text-xs text-muted">
-              Espaço ocupado: {Math.ceil((parseInt(editCurrencyValue) || 0) / 1000)} espaço(s)
+              Espaço ocupado: {Math.floor((parseInt(editCurrencyValue) || 0) / 1000)} espaço(s)
             </div>
 
             {/* Action Buttons */}

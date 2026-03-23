@@ -193,6 +193,9 @@ const wizardSlice = createSlice({
     removePendingChoicesBySource(state, action: PayloadAction<string>) {
       state.pendingChoices = state.pendingChoices.filter(c => c.source !== action.payload)
     },
+    removePendingChoiceById(state, action: PayloadAction<string>) {
+      state.pendingChoices = state.pendingChoices.filter(c => c.id !== action.payload)
+    },
     resolveChoice(state, action: PayloadAction<{ choiceId: string; selectedOptions: string[] }>) {
       const { choiceId, selectedOptions } = action.payload
       const choice = state.pendingChoices.find(c => c.id === choiceId)

@@ -1,4 +1,4 @@
-import type { Character, CombatAction, WeaponAttack, EquippedItems, EquipmentItem, Currencies, ActiveEffect, Ability } from '~/types/character'
+import type { Character, CombatAction, WeaponAttack, EquippedItems, EquipmentItem, Currencies, ActiveEffect, Ability, CharacterNotesData } from '~/types/character'
 import MiscGrid from '../MiscGrid'
 import { buildMiscCards } from '../miscCards'
 
@@ -48,7 +48,7 @@ type DesktopViewProps = {
   onBackpackChange: (newBackpack: (EquipmentItem | null)[]) => void
   onCurrenciesChange: (newCurrencies: Currencies) => void
   onResistancesChange: (newResistances: Character['resistances']) => void
-  onNotesChange: (notes: string) => void
+  onNotesChange: (notes: CharacterNotesData) => void
   onNavChange: (nav: string) => void
   onStartTurn: () => void
   onUseAction: (action: CombatAction) => void
@@ -202,7 +202,7 @@ export default function DesktopView({
           {/* Senses/Proficiencies + Misc Info Section */}
           <MiscGrid
             cards={buildMiscCards(character, onSwitchToCombat, onRollInitiative)}
-            minColWidth={500}
+            minColWidth={300}
             gap={6}
             className="mb-2"
           />
@@ -215,7 +215,7 @@ export default function DesktopView({
             <EquippedItemsSummaryCard
               character={character}
               onEquippedItemsChange={onEquippedItemsChange}
-              onBackpackChange={onBackpackChange}
+              onBackpackChange={onBackpackChange} 
               onUseConsumable={onUseConsumable}
               onCombatAction={onCombatAction}
               currencies={character.currencies}

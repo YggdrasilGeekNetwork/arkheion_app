@@ -10,8 +10,9 @@ type ProficienciesCardProps = {
 
 const ProficienciesCard = ({ proficiencies }: ProficienciesCardProps) => (
   <Card>
-    <div className="text-sm md:text-base font-semibold mb-1">Proficiências</div>
-    <div className="flex flex-wrap gap-x-3 gap-y-1">
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span className="text-sm md:text-base font-semibold shrink-0">Proficiências</span>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 min-w-[12rem]">
       {proficiencies.map((prof, index) => (
         <Tooltip key={index} content={prof.tooltip ?? ''} className={prof.tooltip ? 'cursor-help' : 'pointer-events-none'}>
           <span className="text-sm text-muted">
@@ -19,6 +20,7 @@ const ProficienciesCard = ({ proficiencies }: ProficienciesCardProps) => (
           </span>
         </Tooltip>
       ))}
+      </div>
     </div>
   </Card>
 )

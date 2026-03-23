@@ -1,3 +1,27 @@
+export type CharacterNoteTag = {
+  id: string
+  label: string
+  color: string
+  isCustom: boolean
+}
+
+export type CharacterNote = {
+  id: string
+  title: string
+  content: string
+  tags: string[]
+  sessionId: string | null
+  color: string
+  pinned: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type CharacterNotesData = {
+  items: CharacterNote[]
+  customTags: CharacterNoteTag[]
+}
+
 export type CharacterClass = {
   name: string
   level: number
@@ -269,7 +293,7 @@ export type Character = {
   currencies: Currencies
 
   // Notes
-  notes?: string
+  notes?: CharacterNotesData
 
   // Metadata
   updatedAt: string

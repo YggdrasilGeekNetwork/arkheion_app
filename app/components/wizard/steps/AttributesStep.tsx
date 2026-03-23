@@ -465,16 +465,38 @@ export default function AttributesStep() {
 
       {/* Summary */}
       <div className="bg-card-muted border border-stroke rounded-lg p-4">
-        <h3 className="font-semibold mb-2">Resumo dos Modificadores (com bônus raciais)</h3>
+        <h3 className="font-semibold mb-3">Resumo dos Modificadores</h3>
         <div className="flex flex-wrap gap-4">
           {(Object.keys(ATTRIBUTE_LABELS) as Array<keyof AttributeValues>).map(attr => {
+            const baseValue = attributes[attr]
             const finalValue = getFinalValue(attr)
+            const fixedBonus = racialBonuses
+              .filter(b => !b.source.endsWith('-attr-bonus') && b.attribute === attr)
+              .reduce((s, b) => s + b.value, 0)
+            const chosenBonus = racialBonuses
+              .filter(b => b.source.endsWith('-attr-bonus') && b.attribute === attr)
+              .reduce((s, b) => s + b.value, 0)
             return (
-              <div key={attr} className="text-center">
-                <div className="text-xs text-muted">{attr}</div>
-                <div className={`text-lg font-bold ${finalValue >= 0 ? 'text-accent' : 'text-red-500'}`}>
+              <div key={attr} className="text-center min-w-[3.5rem]">
+                <div className="text-xs text-muted mb-0.5">{attr}</div>
+                <div className={`text-xl font-bold ${finalValue >= 0 ? 'text-accent' : 'text-red-500'}`}>
                   {formatModifier(finalValue)}
                 </div>
+                {(fixedBonus !== 0 || chosenBonus !== 0) && (
+                  <div className="mt-1 flex flex-col gap-0.5 items-center">
+                    <span className="text-xs text-muted">{formatModifier(baseValue)} base</span>
+                    {fixedBonus !== 0 && (
+                      <span className="text-xs px-1 rounded bg-accent/15 text-accent">
+                        {fixedBonus > 0 ? '+' : ''}{fixedBonus} racial
+                      </span>
+                    )}
+                    {chosenBonus !== 0 && (
+                      <span className="text-xs px-1 rounded bg-yellow-500/20 text-yellow-600 dark:text-yellow-400">
+                        {chosenBonus > 0 ? '+' : ''}{chosenBonus} escolha
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}
@@ -484,15 +506,30 @@ export default function AttributesStep() {
       {/* Cost table reference */}
       {attributeMethod === 'point-buy' && (
         <div className="bg-card-muted border border-stroke rounded-lg p-3 text-xs text-muted">
-          <p className="font-semibold mb-1">Tabela de Custos:</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <span>-1: devolve 1pt</span>
-            <span>0: 0pt</span>
-            <span>+1: 1pt</span>
-            <span>+2: 2pts</span>
-            <span>+3: 4pts</span>
-            <span>+4: 7pts</span>
-          </div>
+          <p className="font-semibold mb-2">Tabela de Custos:</p>
+          <table className="w-full text-center border-collapse">
+            <thead>
+              <tr className="border-b border-stroke">
+                <th className="pb-1 pr-2 text-left font-medium">Modificador</th>
+                <th className="pb-1 font-medium">Custo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { mod: '-1', cost: '−1pt (devolve)' },
+                { mod: '0',  cost: '0pt' },
+                { mod: '+1', cost: '1pt' },
+                { mod: '+2', cost: '2pts' },
+                { mod: '+3', cost: '4pts' },
+                { mod: '+4', cost: '7pts' },
+              ].map(({ mod, cost }) => (
+                <tr key={mod} className="border-b border-stroke/40 last:border-0">
+                  <td className="py-0.5 pr-2 text-left">{mod}</td>
+                  <td className="py-0.5">{cost}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

@@ -65,7 +65,7 @@ export default function DMDashboard({ onBack }: DMDashboardProps) {
       {/* Persistent MusicPlayer — lives outside the view switcher so the iframe is never
           destroyed when toggling between dashboard and combat mode */}
       {activePlaylistUrl && (
-        <div className="fixed bottom-4 right-4 z-40 w-72 shadow-xl">
+        <div className="fixed bottom-4 right-4 z-40 w-96 shadow-xl">
           <MusicPlayer
             activeUrl={activePlaylistUrl}
             onClose={() => audioEngine.setActivePlaylistId(null)}

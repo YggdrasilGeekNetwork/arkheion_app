@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability, Spell } from '~/types/character'
+import type { Character, EquippedItems, Currencies, AvailableActions, Attribute, Resistance, Skill, CombatAction, WeaponAttack, Ability, Spell, CharacterNotesData } from '~/types/character'
 import type { LevelUpData } from '~/types/levelup'
 import { getModifierFromValue } from '~/types/levelup'
 
@@ -141,7 +141,7 @@ const characterSlice = createSlice({
       state.character.version += 1
       state.character.updatedAt = new Date().toISOString()
     },
-    updateNotes(state, action: PayloadAction<string>) {
+    updateNotes(state, action: PayloadAction<CharacterNotesData>) {
       if (!state.character) return
       state.character.notes = action.payload
       state.character.version += 1

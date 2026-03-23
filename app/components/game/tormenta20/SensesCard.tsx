@@ -37,11 +37,12 @@ const SensesCard = ({ senses, onSensesVisibilityChange }: SensesCardProps) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-2 gap-y-1 md:gap-y-1.5">
+      <div className="grid grid-cols-2 divide-x divide-stroke gap-y-1 md:gap-y-1.5">
         {displaySenses.map((sense, index) => {
           const isHidden = hiddenNames.has(sense.name)
+          const isRightCol = index % 2 === 1
           return (
-            <div key={index} className="flex justify-between text-sm md:text-base group relative">
+            <div key={index} className={`flex justify-between text-sm md:text-base group relative ${isRightCol ? 'pl-2' : 'pr-2'}`}>
               {editing && (
                 <button
                   onClick={() => toggleSense(sense.name)}

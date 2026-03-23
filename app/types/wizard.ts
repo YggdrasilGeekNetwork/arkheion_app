@@ -40,6 +40,8 @@ export type ChoiceOption = {
   id: string
   name: string
   description?: string
+  school?: string      // spell school code, e.g. 'abjur'
+  schoolName?: string  // Portuguese name, e.g. 'Abjuração'
   effects?: {
     attributeBonus?: { attribute: string; value: number }
     skillBonus?: { skill: string; value: number }
@@ -47,6 +49,17 @@ export type ChoiceOption = {
     proficiency?: string
   }
 }
+
+export type PowerPrerequisite = {
+  type: string
+  sub_type: 'hard' | 'soft' | string
+  attr?: string | string[]
+  value?: number
+  skill?: string
+  id?: string
+}
+
+export type ChoiceEffectType = 'attribute-bonus' | 'versatil-mode' | 'deformidade-mode' | 'skill-bonus' | 'memoria-postuma-mode' | 'spell-grant' | 'skill-training' | 'element-choice' | 'caminho-do-arcanista' | 'linhagem-do-feiticeiro' | 'origem-mode' | 'escola-de-magias'
 
 export type PendingChoice = {
   id: string
@@ -60,7 +73,11 @@ export type PendingChoice = {
   maxSelections: number
   selectedOptions: string[]
   isResolved: boolean
+  effectType?: ChoiceEffectType
+  effectValue?: number
   dependsOn?: string
+  availableSkills?: Array<{ id: string; name: string }>
+  availablePowers?: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
 }
 
 // Attribute allocation method
@@ -233,6 +250,8 @@ export type RaceData = {
     maxSelections: number
     options: ChoiceOption[]
     targetStep: WizardStep
+    effectType?: ChoiceEffectType
+    effectValue?: number
   }>
 }
 
@@ -253,7 +272,7 @@ export type ClassData = {
     armors: string[]
     shields: boolean
   }
-  abilities: Array<{ id: string; name: string; description?: string }>
+  abilities: Array<{ id: string; name: string; description?: string; level?: number }>
   choices?: Array<{
     id: string
     title: string
@@ -263,6 +282,9 @@ export type ClassData = {
     maxSelections: number
     options: ChoiceOption[]
     targetStep: WizardStep
+    effectType?: ChoiceEffectType
+    effectValue?: number
+    dependsOn?: string
     level?: number
   }>
 }
@@ -289,13 +311,29 @@ export type DeityData = {
   grantedPowers: DeityPower[]
 }
 
+export type OriginChoice = {
+  id: string
+  title: string
+  description?: string
+  type: 'single' | 'multiple'
+  minSelections: number
+  maxSelections: number
+  targetStep: WizardStep
+  effectType?: ChoiceEffectType
+  options: ChoiceOption[]
+  availableSkills?: Array<{ id: string; name: string }>
+  availablePowers?: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
+}
+
 export type OriginData = {
   id: string
   name: string
   description: string
   skills: string[]
-  powers: string[]
+  items?: string[]
+  powers: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
   specialNote?: string
+  choices?: OriginChoice[]
 }
 
 // Loader data for the wizard page
@@ -305,4 +343,8 @@ export type WizardLoaderData = {
   deities: DeityData[]
   origins: OriginData[]
   skills: Array<{ name: string; attribute: string; description?: string }>
+  generalPowers: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
+  tormentaPowers: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
+  simpleWeapons: Array<{ id: string; name: string; damage?: string; damageType?: string; critical?: string; range?: string }>
+  martialWeapons: Array<{ id: string; name: string; damage?: string; damageType?: string; critical?: string; range?: string }>
 }

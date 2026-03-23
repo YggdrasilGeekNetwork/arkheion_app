@@ -461,6 +461,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
           'race': [],
           'class': [],
           'attributes': [],
+          'origin': [],
           'deity': [],
           'skills': [],
           'abilities': [],

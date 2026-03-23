@@ -3,12 +3,11 @@ import { useWizard } from '~/contexts/WizardContext'
 import { InlineChoiceResolver } from '../ChoiceResolver'
 
 export default function ClassStep() {
-  const { state, dispatch, loaderData, addClass, removeClass, getChoicesForStep, resolveChoice, getTotalLevel } = useWizard()
+  const { state, loaderData, addClass, removeClass, getChoicesForStep, resolveChoice } = useWizard()
   const { classes: selectedClasses } = state.data
 
   const allClasses = loaderData?.classes || []
   const classChoices = getChoicesForStep('class')
-  const totalLevel = getTotalLevel()
 
   // Track which class is being previewed (not yet added)
   const [previewingClassId, setPreviewingClassId] = useState<string | null>(null)
@@ -26,6 +25,10 @@ export default function ClassStep() {
 
   const handleAddPreviewedClass = () => {
     if (previewingClass && !selectedClasses.find(c => c.id === previewingClass.id)) {
+      // Replace any existing class
+      if (selectedClasses.length > 0) {
+        removeClass(selectedClasses[0].id)
+      }
       addClass(previewingClass, 1)
       setPreviewingClassId(null)
     }
@@ -35,80 +38,56 @@ export default function ClassStep() {
     removeClass(classId)
   }
 
-  const handleLevelChange = (classId: string, level: number) => {
-    dispatch({ type: 'UPDATE_CLASS_LEVEL', payload: { classId, level } })
-  }
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold mb-2">Escolha sua Classe</h2>
         <p className="text-sm text-muted">
           A classe define o papel do seu personagem em combate e suas habilidades principais.
-          Você pode escolher mais de uma classe para criar um personagem multiclasse.
         </p>
       </div>
 
-      {/* Selected Classes Summary */}
+      {/* Selected Class Summary */}
       {selectedClasses.length > 0 && (
         <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Classes Selecionadas</h3>
-            <span className="text-sm text-accent">Nível Total: {totalLevel}</span>
-          </div>
-          <div className="space-y-2">
-            {selectedClasses.map(cls => {
-              const classData = allClasses.find(c => c.id === cls.id)
-              return (
-                <div key={cls.id} className="flex items-center gap-3 bg-card border border-stroke rounded-lg p-3">
-                  <div className="flex-1">
-                    <span className="font-medium">{cls.name}</span>
-                    {classData && (
-                      <span className="text-xs text-muted ml-2">
-                        (+{classData.hpPerLevel} PV/nível)
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted">Nível:</label>
-                    <select
-                      value={cls.level}
-                      onChange={(e) => handleLevelChange(cls.id, parseInt(e.target.value))}
-                      className="w-16 px-2 py-1 bg-card-muted border border-stroke rounded focus:border-accent focus:outline-none text-sm"
-                    >
-                      {Array.from({ length: 20 }, (_, i) => i + 1).map(level => (
-                        <option key={level} value={level}>{level}</option>
-                      ))}
-                    </select>
-
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveClass(cls.id)}
-                      className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+          <h3 className="font-semibold mb-3">Classe Selecionada</h3>
+          {selectedClasses.map(cls => {
+            const classData = allClasses.find(c => c.id === cls.id)
+            return (
+              <div key={cls.id} className="flex items-center gap-3 bg-card border border-stroke rounded-lg p-3">
+                <div className="flex-1">
+                  <span className="font-medium">{cls.name}</span>
+                  {classData && (
+                    <span className="text-xs text-muted ml-2">
+                      (+{classData.hpPerLevel} PV/nível)
+                    </span>
+                  )}
+                  <span className="text-xs text-muted ml-2">Nível 1</span>
                 </div>
-              )
-            })}
-          </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveClass(cls.id)}
+                  className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
 
       {/* Available Classes Grid */}
       <div>
         <h3 className="text-sm font-medium text-muted mb-3">
-          {selectedClasses.length > 0 ? 'Adicionar outra classe (multiclasse)' : 'Selecione uma classe para ver detalhes'}
+          {selectedClasses.length > 0 ? 'Trocar classe' : 'Selecione uma classe para ver detalhes'}
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           {allClasses.map(cls => {
             const isSelected = selectedClasses.some(c => c.id === cls.id)
             const isPreviewing = previewingClassId === cls.id
-
             return (
               <button
                 key={cls.id}
@@ -218,7 +197,14 @@ export default function ClassStep() {
             <div className="space-y-2">
               {previewingClass.abilities.map(ability => (
                 <div key={ability.id} className="bg-card-muted border border-stroke rounded p-2">
-                  <span className="text-sm font-medium">{ability.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{ability.name}</span>
+                    {ability.level != null && (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-accent/15 text-accent font-medium shrink-0">
+                        Nv. {ability.level}
+                      </span>
+                    )}
+                  </div>
                   {ability.description && (
                     <p className="text-xs text-muted mt-1 line-clamp-2">{ability.description}</p>
                   )}
@@ -233,7 +219,7 @@ export default function ClassStep() {
             onClick={handleAddPreviewedClass}
             className="w-full py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:bg-accent/90 transition-colors"
           >
-            Adicionar {previewingClass.name}
+            {selectedClasses.length > 0 ? `Trocar para ${previewingClass.name}` : `Escolher ${previewingClass.name}`}
           </button>
         </div>
       )}
@@ -283,7 +269,14 @@ export default function ClassStep() {
                   <div className="space-y-2">
                     {classData.abilities.map(ability => (
                       <div key={ability.id} className="bg-card border border-stroke rounded p-2">
-                        <span className="text-sm font-medium">{ability.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{ability.name}</span>
+                          {ability.level != null && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-accent/15 text-accent font-medium shrink-0">
+                              Nv. {ability.level}
+                            </span>
+                          )}
+                        </div>
                         {ability.description && (
                           <p className="text-xs text-muted mt-1 line-clamp-2">{ability.description}</p>
                         )}
