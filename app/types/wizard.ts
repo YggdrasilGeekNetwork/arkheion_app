@@ -176,6 +176,7 @@ export type WizardState = {
     equipmentMethod: EquipmentMethod
     startingEquipment: EquipmentSelection
     currencies: { tc: number; tp: number; to: number }
+    originItemChoices: Record<number, string>
 
     // Step 9: Toques Finais
     name: string
@@ -218,6 +219,7 @@ export const initialWizardState: WizardState = {
     equipmentMethod: 'package',
     startingEquipment: { weapons: [], armor: [], items: [] },
     currencies: { tc: 0, tp: 0, to: 0 },
+    originItemChoices: {},
   },
   computed: {
     totalLevel: 0,
@@ -325,12 +327,18 @@ export type OriginChoice = {
   availablePowers?: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
 }
 
+export type OriginItemOption = { text: string }
+
+export type OriginItem =
+  | { type: 'fixed'; text: string; quantity?: number }
+  | { type: 'choice'; text: string; options: OriginItemOption[]; quantity?: number }
+
 export type OriginData = {
   id: string
   name: string
   description: string
   skills: string[]
-  items?: string[]
+  items?: OriginItem[]
   powers: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
   specialNote?: string
   choices?: OriginChoice[]

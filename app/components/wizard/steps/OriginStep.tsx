@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useWizard } from '~/contexts/WizardContext'
 import { InlineChoiceResolver } from '../ChoiceResolver'
 import { checkPowerEligibility, buildIneligiblePowerOptions } from '~/lib/powerEligibility'
-import type { PowerPrerequisite, AttributeValues } from '~/types/wizard'
+import type { PowerPrerequisite, AttributeValues, OriginItem } from '~/types/wizard'
 
 // ── PowerList ─────────────────────────────────────────────────────────────────
 
@@ -136,6 +136,25 @@ export default function OriginStep() {
                       <span key={skill} className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
                         {skill}
                       </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(selectedOriginData.items ?? []).length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-muted mb-1">Itens Iniciais</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(selectedOriginData.items as OriginItem[]).map((item, i) => (
+                      item.type === 'fixed' ? (
+                        <span key={i} className="text-xs bg-card border border-stroke text-muted px-2 py-1 rounded">
+                          {item.quantity && item.quantity > 1 ? `${item.text} ×${item.quantity}` : item.text}
+                        </span>
+                      ) : (
+                        <span key={i} className="text-xs bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400 px-2 py-1 rounded">
+                          {item.text} <span className="opacity-70">(escolha no passo Equipamento)</span>
+                        </span>
+                      )
                     ))}
                   </div>
                 </div>

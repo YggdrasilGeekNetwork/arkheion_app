@@ -1,9 +1,10 @@
 import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node"
-import { Form, Link, useActionData, useNavigation } from "@remix-run/react"
+import { Form, Link, useActionData, useNavigation, useFetcher } from "@remix-run/react"
 import { json } from "@remix-run/node"
 import { gqlRequest } from "~/utils/graphql.server"
 import { createUserSession } from "~/utils/session.server"
-import { LOGIN_MUTATION } from "~/graphql/auth"
+import { LOGIN_MUTATION, OAUTH_GOOGLE_MUTATION } from "~/graphql/auth"
+import { GoogleSignInButton } from "~/components/ui/GoogleSignInButton"
 
 export const meta: MetaFunction = () => {
   return [
@@ -12,7 +13,7 @@ export const meta: MetaFunction = () => {
   ]
 }
 
-interface LoginPayload {
+interface AuthPayload {
   user: { id: string; email: string; username: string; displayName: string | null }
   accessToken: string | null
   refreshToken: string | null
@@ -21,6 +22,38 @@ interface LoginPayload {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData()
+  const intent = formData.get("intent") as string
+
+  if (intent === "google") {
+    const idToken = formData.get("idToken") as string
+    if (!idToken) {
+      return json({ error: "Token do Google ausente" }, { status: 400 })
+    }
+    let result: Awaited<ReturnType<typeof gqlRequest<{ oauthGoogle: AuthPayload }>>>
+    try {
+      result = await gqlRequest<{ oauthGoogle: AuthPayload }>(OAUTH_GOOGLE_MUTATION, { idToken })
+    } catch {
+      return json({ error: "Serviço indisponível. Tente novamente mais tarde." }, { status: 503 })
+    }
+    if (result.errors?.length) {
+      return json({ error: result.errors[0].message }, { status: 500 })
+    }
+    const payload = result.data?.oauthGoogle
+    if (payload?.errors?.length) {
+      return json({ error: payload.errors[0] }, { status: 400 })
+    }
+    if (!payload?.accessToken || !payload?.refreshToken) {
+      return json({ error: "Erro inesperado. Tente novamente." }, { status: 500 })
+    }
+    return createUserSession({
+      request,
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken,
+      redirectTo: "/characters",
+    })
+  }
+
+  // Default: password login
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
@@ -28,9 +61,9 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "Email e senha são obrigatórios" }, { status: 400 })
   }
 
-  let result: Awaited<ReturnType<typeof gqlRequest<{ login: LoginPayload }>>>
+  let result: Awaited<ReturnType<typeof gqlRequest<{ login: AuthPayload }>>>
   try {
-    result = await gqlRequest<{ login: LoginPayload }>(LOGIN_MUTATION, { email, password })
+    result = await gqlRequest<{ login: AuthPayload }>(LOGIN_MUTATION, { email, password })
   } catch {
     return json({ error: "Serviço indisponível. Tente novamente mais tarde." }, { status: 503 })
   }
@@ -59,7 +92,17 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function Login() {
   const actionData = useActionData<typeof action>()
   const navigation = useNavigation()
-  const isSubmitting = navigation.state === "submitting"
+  const fetcher = useFetcher()
+  const isSubmitting = navigation.state === "submitting" || fetcher.state === "submitting"
+
+  function handleGoogleToken(idToken: string) {
+    const form = new FormData()
+    form.set("intent", "google")
+    form.set("idToken", idToken)
+    fetcher.submit(form, { method: "post", action: "/login" })
+  }
+
+  const googleError = fetcher.data && "error" in fetcher.data ? (fetcher.data as { error: string }).error : null
 
   return (
     <div className="w-full max-w-md mx-auto px-4 py-8">
@@ -69,7 +112,24 @@ export default function Login() {
       </div>
 
       <div className="bg-card border border-stroke rounded-lg p-6">
+        {/* Google Sign-In */}
+        <div className="mb-4">
+          <GoogleSignInButton
+            label="Entrar com Google"
+            onToken={handleGoogleToken}
+            onError={() => {}}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 border-t border-stroke" />
+          <span className="text-muted text-xs">ou</span>
+          <div className="flex-1 border-t border-stroke" />
+        </div>
+
         <Form method="post" className="space-y-4">
+          <input type="hidden" name="intent" value="password" />
+
           <div>
             <label htmlFor="email" className="block text-sm font-semibold mb-1">
               Email
@@ -96,11 +156,16 @@ export default function Login() {
               className="w-full px-3 py-2 bg-card-muted border border-stroke rounded focus:outline-none focus:border-accent"
               placeholder="••••••••"
             />
+            <div className="text-right mt-1">
+              <Link to="/forgot-password" className="text-accent hover:underline text-xs">
+                Esqueceu a senha?
+              </Link>
+            </div>
           </div>
 
-          {actionData?.error && (
+          {(actionData?.error || googleError) && (
             <div className="bg-red-600 bg-opacity-10 border border-red-600 rounded p-3 text-sm text-red-600">
-              {actionData.error}
+              {actionData?.error ?? googleError}
             </div>
           )}
 

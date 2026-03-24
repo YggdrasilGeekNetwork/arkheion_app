@@ -1,9 +1,10 @@
 import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node"
-import { Form, Link, useActionData, useNavigation } from "@remix-run/react"
+import { Form, Link, useActionData, useNavigation, useFetcher } from "@remix-run/react"
 import { json } from "@remix-run/node"
 import { gqlRequest } from "~/utils/graphql.server"
 import { createUserSession } from "~/utils/session.server"
-import { REGISTER_MUTATION } from "~/graphql/auth"
+import { REGISTER_MUTATION, OAUTH_GOOGLE_MUTATION } from "~/graphql/auth"
+import { GoogleSignInButton } from "~/components/ui/GoogleSignInButton"
 
 export const meta: MetaFunction = () => {
   return [
@@ -12,7 +13,7 @@ export const meta: MetaFunction = () => {
   ]
 }
 
-interface RegisterPayload {
+interface AuthPayload {
   user: { id: string; email: string; username: string; displayName: string | null }
   accessToken: string | null
   refreshToken: string | null
@@ -26,6 +27,38 @@ function usernameFromEmail(email: string): string {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData()
+  const intent = formData.get("intent") as string
+
+  if (intent === "google") {
+    const idToken = formData.get("idToken") as string
+    if (!idToken) {
+      return json({ error: "Token do Google ausente" }, { status: 400 })
+    }
+    let result: Awaited<ReturnType<typeof gqlRequest<{ oauthGoogle: AuthPayload }>>>
+    try {
+      result = await gqlRequest<{ oauthGoogle: AuthPayload }>(OAUTH_GOOGLE_MUTATION, { idToken })
+    } catch {
+      return json({ error: "Serviço indisponível. Tente novamente mais tarde." }, { status: 503 })
+    }
+    if (result.errors?.length) {
+      return json({ error: result.errors[0].message }, { status: 500 })
+    }
+    const payload = result.data?.oauthGoogle
+    if (payload?.errors?.length) {
+      return json({ error: payload.errors[0] }, { status: 400 })
+    }
+    if (!payload?.accessToken || !payload?.refreshToken) {
+      return json({ error: "Erro inesperado. Tente novamente." }, { status: 500 })
+    }
+    return createUserSession({
+      request,
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken,
+      redirectTo: "/characters",
+    })
+  }
+
+  // Default: password registration
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
@@ -38,18 +71,23 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "As senhas não coincidem" }, { status: 400 })
   }
 
-  if (password.length < 6) {
-    return json({ error: "A senha deve ter pelo menos 6 caracteres" }, { status: 400 })
+  if (password.length < 8) {
+    return json({ error: "A senha deve ter pelo menos 8 caracteres" }, { status: 400 })
   }
 
   const username = usernameFromEmail(email)
 
-  const result = await gqlRequest<{ register: RegisterPayload }>(REGISTER_MUTATION, {
-    email,
-    username,
-    password,
-    passwordConfirmation: confirmPassword,
-  })
+  let result: Awaited<ReturnType<typeof gqlRequest<{ register: AuthPayload }>>>
+  try {
+    result = await gqlRequest<{ register: AuthPayload }>(REGISTER_MUTATION, {
+      email,
+      username,
+      password,
+      passwordConfirmation: confirmPassword,
+    })
+  } catch {
+    return json({ error: "Serviço indisponível. Tente novamente mais tarde." }, { status: 503 })
+  }
 
   if (result.errors?.length) {
     return json({ error: result.errors[0].message }, { status: 500 })
@@ -75,7 +113,17 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function Signup() {
   const actionData = useActionData<typeof action>()
   const navigation = useNavigation()
-  const isSubmitting = navigation.state === "submitting"
+  const fetcher = useFetcher()
+  const isSubmitting = navigation.state === "submitting" || fetcher.state === "submitting"
+
+  function handleGoogleToken(idToken: string) {
+    const form = new FormData()
+    form.set("intent", "google")
+    form.set("idToken", idToken)
+    fetcher.submit(form, { method: "post", action: "/signup" })
+  }
+
+  const googleError = fetcher.data && "error" in fetcher.data ? (fetcher.data as { error: string }).error : null
 
   return (
     <div className="w-full max-w-md mx-auto px-4 py-8">
@@ -85,7 +133,24 @@ export default function Signup() {
       </div>
 
       <div className="bg-card border border-stroke rounded-lg p-6">
+        {/* Google Sign-Up */}
+        <div className="mb-4">
+          <GoogleSignInButton
+            label="Cadastrar com Google"
+            onToken={handleGoogleToken}
+            onError={() => {}}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 border-t border-stroke" />
+          <span className="text-muted text-xs">ou</span>
+          <div className="flex-1 border-t border-stroke" />
+        </div>
+
         <Form method="post" className="space-y-4">
+          <input type="hidden" name="intent" value="password" />
+
           <div>
             <label htmlFor="email" className="block text-sm font-semibold mb-1">
               Email
@@ -109,7 +174,7 @@ export default function Signup() {
               id="password"
               name="password"
               required
-              minLength={6}
+              minLength={8}
               className="w-full px-3 py-2 bg-card-muted border border-stroke rounded focus:outline-none focus:border-accent"
               placeholder="••••••••"
             />
@@ -124,15 +189,15 @@ export default function Signup() {
               id="confirmPassword"
               name="confirmPassword"
               required
-              minLength={6}
+              minLength={8}
               className="w-full px-3 py-2 bg-card-muted border border-stroke rounded focus:outline-none focus:border-accent"
               placeholder="••••••••"
             />
           </div>
 
-          {actionData?.error && (
+          {(actionData?.error || googleError) && (
             <div className="bg-red-600 bg-opacity-10 border border-red-600 rounded p-3 text-sm text-red-600">
-              {actionData.error}
+              {actionData?.error ?? googleError}
             </div>
           )}
 

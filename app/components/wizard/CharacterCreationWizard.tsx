@@ -110,7 +110,10 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
     }
     goToStep(stepId as WizardStep)
     setNavigationWarning(null)
+    scrollToTop()
   }, [goToStep, state.data.classes, state.completedSteps])
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
   const handleNext = useCallback(() => {
     if (isLastStep()) {
@@ -120,15 +123,18 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
       fetcher.submit(formData, { method: 'post' })
     } else {
       nextStep()
+      scrollToTop()
     }
   }, [isLastStep, nextStep, state.data, fetcher])
 
   const handleBack = useCallback(() => {
     previousStep()
+    scrollToTop()
   }, [previousStep])
 
   const currentErrors = state.errors[state.currentStep] || []
   const submitting = isSubmitting || fetcher.state === 'submitting'
+  const submitError = (fetcher.data as { error?: string } | undefined)?.error
 
   const renderStep = () => {
     switch (state.currentStep) {
@@ -209,6 +215,13 @@ export default function CharacterCreationWizard({ isSubmitting = false }: Charac
       <div className="bg-card border border-stroke rounded-lg p-4 md:p-6 min-h-[400px]">
         {renderStep()}
       </div>
+
+      {/* Submission error */}
+      {submitError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-500">
+          {submitError}
+        </div>
+      )}
 
       {/* Navigation */}
       <WizardNavigation

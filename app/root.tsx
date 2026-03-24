@@ -4,11 +4,20 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
-import type { LinksFunction } from "@remix-run/node";
+import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/lib/integration/react'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { store, persistor } from '~/store'
+
+export async function loader(_: LoaderFunctionArgs) {
+  return json({
+    googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
+  })
+}
 
 import "./tailwind.css";
 
@@ -44,11 +53,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { googleClientId } = useLoaderData<typeof loader>()
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <Outlet />
-      </PersistGate>
-    </Provider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <Outlet />
+        </PersistGate>
+      </Provider>
+    </GoogleOAuthProvider>
   );
 }

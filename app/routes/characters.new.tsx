@@ -74,6 +74,7 @@ type ApiClasse = {
 
 type ApiOrigem = {
   id: string; name: string; description?: string
+  items?: Array<{ type: string; text: string; quantity?: number; options?: Array<{ text: string }> }>
   benefits?: { skills?: string[]; powers?: string[]; special?: string }
   choices?: Array<{
     id: string; title: string; description?: string
@@ -239,6 +240,7 @@ function transformOrigins(origens: ApiOrigem[]): OriginData[] {
     name: o.name,
     description: o.description || '',
     skills: o.benefits?.skills || [],
+    items: (o.items || []) as import('~/types/wizard').OriginItem[],
     powers: (o.choices?.[0]?.availablePowers ?? []),
     specialNote: o.benefits?.special,
     choices: (o.choices ?? []).map(c => ({
@@ -421,6 +423,7 @@ function buildCreateInput(wizardData: Record<string, any>, pendingChoices: Pendi
       chosenSkills,
       chosenPowers,
       chosenProficiencies: [],
+      chosenItems: Object.values(wizardData.originItemChoices ?? {}),
     },
     deityKey: wizardData.deity?.id ?? null,
     sheetAttributes: Object.fromEntries(
@@ -458,7 +461,16 @@ export async function action({ request }: ActionFunctionArgs) {
       createCharacter: { character: { id: string } | null; errors: string[] | null }
     }>(CREATE_CHARACTER_MUTATION, { input }, token)
 
-    const { character, errors } = result.data!.createCharacter
+    if (result.errors?.length) {
+      return json({ error: result.errors.map(e => e.message).join('; ') }, { status: 422 })
+    }
+
+    const payload = result.data?.createCharacter
+    if (!payload) {
+      return json({ error: 'Resposta inesperada da API' }, { status: 500 })
+    }
+
+    const { character, errors } = payload
     if (errors?.length) {
       return json({ error: errors.join(', ') }, { status: 422 })
     }
@@ -469,7 +481,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return redirect(`/characters/${character.id}`)
   } catch (error) {
     console.error('Failed to create character:', error)
-    return json({ error: 'Erro ao criar personagem' }, { status: 503 })
+    return json({ error: 'Serviço indisponível. Verifique se o servidor está rodando.' }, { status: 503 })
   }
 }
 

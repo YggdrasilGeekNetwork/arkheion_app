@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useWizard } from '~/contexts/WizardContext'
+import type { OriginItem } from '~/types/wizard'
 
 // ── Static armor/shield options ───────────────────────────────────────────────
 
@@ -85,14 +86,21 @@ function ArmorRow({ armor, selected, onSelect }: { armor: { id: string; name: st
 
 export default function EquipmentStep() {
   const { state, dispatch, loaderData } = useWizard()
-  const { classes: selectedClasses, startingEquipment, currencies, origin } = state.data
+  const { classes: selectedClasses, startingEquipment, currencies, origin, originItemChoices } = state.data
 
   const simpleWeapons = loaderData?.simpleWeapons || []
   const martialWeapons = loaderData?.martialWeapons || []
 
   // Origin items
   const originData = origin ? loaderData?.origins?.find(o => o.id === origin.id) : null
-  const originItems = originData?.items ?? []
+  const originItems: OriginItem[] = originData?.items ?? []
+
+  const setItemChoice = (itemIndex: number, optionText: string) => {
+    dispatch({
+      type: 'SET_ORIGIN_ITEM_CHOICES',
+      payload: { ...originItemChoices, [itemIndex]: optionText },
+    })
+  }
 
   // Compute proficiencies from selected classes
   const classData = loaderData?.classes || []
@@ -186,12 +194,37 @@ export default function EquipmentStep() {
               Itens da Origem
               {origin && <span className="text-xs font-normal text-muted ml-1">({origin.name})</span>}
             </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {originItems.map((item, i) => (
-                <span key={i} className="text-xs bg-card border border-stroke text-muted px-2 py-1 rounded">
-                  {item}
-                </span>
-              ))}
+            <div className="space-y-1.5">
+              {originItems.map((item, i) => {
+                if (item.type === 'fixed') {
+                  return (
+                    <span key={i} className="inline-block text-xs bg-card border border-stroke text-muted px-2 py-1 rounded mr-1.5">
+                      {item.quantity && item.quantity > 1 ? `${item.text} ×${item.quantity}` : item.text}
+                    </span>
+                  )
+                }
+                // choice item
+                const selected = originItemChoices?.[i]
+                return (
+                  <div key={i} className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs text-muted font-medium">{item.text}:</span>
+                    {item.options.map(opt => (
+                      <button
+                        key={opt.text}
+                        type="button"
+                        onClick={() => setItemChoice(i, opt.text)}
+                        className={`text-xs px-2 py-1 rounded border transition-all ${
+                          selected === opt.text
+                            ? 'border-accent bg-accent/10 text-accent'
+                            : 'border-stroke bg-card text-muted hover:border-accent/50'
+                        }`}
+                      >
+                        {opt.text}
+                      </button>
+                    ))}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -325,6 +358,13 @@ export default function EquipmentStep() {
         <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 space-y-1 text-sm">
           <h3 className="font-semibold mb-2">Resumo do Equipamento</h3>
           {FIXED_ITEMS.map(i => <div key={i} className="text-muted">• {i}</div>)}
+          {originItems.map((item, i) => {
+            if (item.type === 'fixed') {
+              return <div key={i} className="text-muted">• {item.quantity && item.quantity > 1 ? `${item.text} ×${item.quantity}` : item.text}</div>
+            }
+            const chosen = originItemChoices?.[i]
+            return <div key={i} className="text-muted">• {chosen ?? `${item.text} (pendente)`}</div>
+          })}
           {startingEquipment.weapons.map(w => <div key={w.id} className="text-muted">• {w.name}</div>)}
           {startingEquipment.armor.map(a => <div key={a.id} className="text-muted">• {a.name}</div>)}
           <div className="text-muted">• {currencies.to} TO</div>
