@@ -93,3 +93,59 @@ describe('optimisticUpvotedState', () => {
     expect(optimisticUpvotedState({ upvoted: true }, true)).toBe(false)
   })
 })
+
+function canUpvote(status: string): boolean {
+  return status !== 'done'
+}
+
+function partitionItems<T extends { status: string }>(items: T[]): { active: T[]; done: T[] } {
+  return {
+    active: items.filter((i) => i.status !== 'done'),
+    done: items.filter((i) => i.status === 'done'),
+  }
+}
+
+describe('canUpvote', () => {
+  it('allows upvote for approved', () => {
+    expect(canUpvote('approved')).toBe(true)
+  })
+
+  it('allows upvote for in_progress', () => {
+    expect(canUpvote('in_progress')).toBe(true)
+  })
+
+  it('blocks upvote for done', () => {
+    expect(canUpvote('done')).toBe(false)
+  })
+})
+
+describe('partitionItems', () => {
+  const items = [
+    { id: '1', status: 'approved' },
+    { id: '2', status: 'in_progress' },
+    { id: '3', status: 'done' },
+    { id: '4', status: 'done' },
+  ]
+
+  it('separates active from done', () => {
+    const { active, done } = partitionItems(items)
+    expect(active).toHaveLength(2)
+    expect(done).toHaveLength(2)
+  })
+
+  it('active items do not include done status', () => {
+    const { active } = partitionItems(items)
+    expect(active.every((i) => i.status !== 'done')).toBe(true)
+  })
+
+  it('done items only have done status', () => {
+    const { done } = partitionItems(items)
+    expect(done.every((i) => i.status === 'done')).toBe(true)
+  })
+
+  it('returns empty arrays when no items', () => {
+    const { active, done } = partitionItems([])
+    expect(active).toHaveLength(0)
+    expect(done).toHaveLength(0)
+  })
+})

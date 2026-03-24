@@ -49,9 +49,9 @@ function WeaponRow({ weapon, selected, onSelect }: { weapon: Weapon; selected: b
     >
       <div className="flex items-start gap-1.5">
         <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 mt-0.5 ${selected ? 'border-accent bg-accent' : 'border-muted'}`} />
-        <div className="min-w-0">
-          <div className="text-xs font-medium leading-tight">{weapon.name}</div>
-          <div className="flex flex-wrap gap-x-1.5 text-[10px] text-muted mt-0.5">
+        <div className="min-w-0 flex items-center justify-between gap-1 w-full">
+          <span className="text-xs font-medium leading-tight truncate">{weapon.name}</span>
+          <div className="flex items-center gap-x-1.5 text-[10px] text-muted flex-shrink-0">
             {weapon.damage && <span>{weapon.damage}</span>}
             {weapon.damageType && <span className="text-accent/70">{weapon.damageType}</span>}
             <span>{formatCritical(weapon.critical)}</span>
@@ -84,21 +84,41 @@ function ArmorRow({ armor, selected, onSelect }: { armor: { id: string; name: st
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+// Returns the weapon list matching a weapon-choice option text
+function weaponListForOption(optionText: string, martial: Weapon[], exotic: Weapon[]): { list: Weapon[]; label: string } | null {
+  const t = optionText.toLowerCase()
+  if (t.includes('marcial')) return { list: martial, label: 'Armas Marciais' }
+  if (t.includes('exótica') || t.includes('exotica')) return { list: exotic, label: 'Armas Exóticas' }
+  return null
+}
+
 export default function EquipmentStep() {
   const { state, dispatch, loaderData } = useWizard()
-  const { classes: selectedClasses, startingEquipment, currencies, origin, originItemChoices } = state.data
+  const { classes: selectedClasses, startingEquipment, currencies, origin, originItemChoices, originItemWeaponChoices } = state.data
 
-  const simpleWeapons = loaderData?.simpleWeapons || []
-  const martialWeapons = loaderData?.martialWeapons || []
+  const simpleWeapons: Weapon[] = loaderData?.simpleWeapons || []
+  const martialWeapons: Weapon[] = loaderData?.martialWeapons || []
+  const exoticWeapons: Weapon[] = loaderData?.exoticWeapons || []
 
   // Origin items
   const originData = origin ? loaderData?.origins?.find(o => o.id === origin.id) : null
   const originItems: OriginItem[] = originData?.items ?? []
 
   const setItemChoice = (itemIndex: number, optionText: string) => {
+    // Clear weapon sub-choice when the category option changes
+    const newWeaponChoices = { ...(originItemWeaponChoices ?? {}) }
+    delete newWeaponChoices[itemIndex]
+    dispatch({ type: 'SET_ORIGIN_ITEM_WEAPON_CHOICES', payload: newWeaponChoices })
     dispatch({
       type: 'SET_ORIGIN_ITEM_CHOICES',
       payload: { ...originItemChoices, [itemIndex]: optionText },
+    })
+  }
+
+  const setItemWeaponChoice = (itemIndex: number, weapon: Weapon) => {
+    dispatch({
+      type: 'SET_ORIGIN_ITEM_WEAPON_CHOICES',
+      payload: { ...(originItemWeaponChoices ?? {}), [itemIndex]: { id: weapon.id, name: weapon.name } },
     })
   }
 
@@ -229,6 +249,37 @@ export default function EquipmentStep() {
           </div>
         )}
       </div>
+
+      {/* Origin weapon sub-choices (e.g. Gladiador) — rendered at top level */}
+      {originItems.map((item, i) => {
+        if (item.type !== 'choice') return null
+        const selected = originItemChoices?.[i]
+        if (!selected) return null
+        const weaponList = weaponListForOption(selected, martialWeapons, exoticWeapons)
+        if (!weaponList) return null
+        const selectedWeapon = originItemWeaponChoices?.[i] ?? null
+        return (
+          <div key={`origin-weapon-${i}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-sm font-semibold">{weaponList.label}</h3>
+              <span className="text-xs text-muted bg-card border border-stroke px-1.5 py-0.5 rounded">origem: {origin?.name}</span>
+              {selectedWeapon
+                ? <span className="text-xs text-accent">✓ escolhida</span>
+                : <span className="text-xs text-yellow-500">pendente</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-1 max-h-56 overflow-y-auto pr-1">
+              {weaponList.list.map(w => (
+                <WeaponRow
+                  key={w.id}
+                  weapon={w}
+                  selected={selectedWeapon?.id === w.id}
+                  onSelect={() => setItemWeaponChoice(i, w)}
+                />
+              ))}
+            </div>
+          </div>
+        )
+      })}
 
       {/* Simple weapon */}
       <div>
@@ -362,8 +413,13 @@ export default function EquipmentStep() {
             if (item.type === 'fixed') {
               return <div key={i} className="text-muted">• {item.quantity && item.quantity > 1 ? `${item.text} ×${item.quantity}` : item.text}</div>
             }
-            const chosen = originItemChoices?.[i]
-            return <div key={i} className="text-muted">• {chosen ?? `${item.text} (pendente)`}</div>
+            const categoryChoice = originItemChoices?.[i]
+            const weaponChoice = originItemWeaponChoices?.[i]
+            const weaponList = categoryChoice ? weaponListForOption(categoryChoice, martialWeapons, exoticWeapons) : null
+            const display = weaponList
+              ? (weaponChoice ? weaponChoice.name : `${item.text} (arma pendente)`)
+              : (categoryChoice ?? `${item.text} (pendente)`)
+            return <div key={i} className="text-muted">• {display}</div>
           })}
           {startingEquipment.weapons.map(w => <div key={w.id} className="text-muted">• {w.name}</div>)}
           {startingEquipment.armor.map(a => <div key={a.id} className="text-muted">• {a.name}</div>)}

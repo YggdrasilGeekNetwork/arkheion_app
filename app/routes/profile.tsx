@@ -1,5 +1,6 @@
 import type { MetaFunction, ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node"
 import { Form, useActionData, useLoaderData, useNavigation } from "@remix-run/react"
+import AppHeader from "~/components/ui/AppHeader"
 import { json } from "@remix-run/node"
 import { gqlRequest } from "~/utils/graphql.server"
 import { requireUserToken } from "~/utils/session.server"
@@ -122,6 +123,8 @@ export default function Profile() {
   }
 
   return (
+    <div className="w-full flex flex-col">
+      <AppHeader />
     <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-6">
       <h1 className="text-2xl font-bold text-accent">Meu Perfil</h1>
 
@@ -307,6 +310,7 @@ export default function Profile() {
           </Form>
         </div>
       )}
+    </div>
     </div>
   )
 }

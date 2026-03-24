@@ -57,6 +57,7 @@ export type WizardAction =
   | { type: 'SET_STARTING_EQUIPMENT'; payload: EquipmentSelection }
   | { type: 'SET_CURRENCIES'; payload: { tc: number; tp: number; to: number } }
   | { type: 'SET_ORIGIN_ITEM_CHOICES'; payload: Record<number, string> }
+  | { type: 'SET_ORIGIN_ITEM_WEAPON_CHOICES'; payload: Record<number, { id: string; name: string }> }
 
   // Choice System
   | { type: 'ADD_PENDING_CHOICES'; payload: PendingChoice[] }
@@ -378,10 +379,13 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
     case 'SET_ORIGIN_ITEM_CHOICES':
       return {
         ...state,
-        data: {
-          ...state.data,
-          originItemChoices: action.payload,
-        },
+        data: { ...state.data, originItemChoices: action.payload },
+      }
+
+    case 'SET_ORIGIN_ITEM_WEAPON_CHOICES':
+      return {
+        ...state,
+        data: { ...state.data, originItemWeaponChoices: action.payload },
       }
 
     // Choice System
@@ -494,6 +498,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
           startingEquipment: { weapons: [], armor: [], items: [] },
           currencies: { tc: 0, tp: 0, to: 0 },
           originItemChoices: {},
+          originItemWeaponChoices: {},
         },
         computed: {
           totalLevel: 0,

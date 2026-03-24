@@ -1,3 +1,4 @@
+import { useState } from "react"
 import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
 import { json } from "@remix-run/node"
 import { useLoaderData, useFetcher } from "@remix-run/react"
@@ -102,6 +103,7 @@ function ProgressBar({ progress }: { progress: number }) {
 
 function FeedbackCard({ item }: { item: FeedbackItem }) {
   const fetcher = useFetcher()
+  const isDone = item.status === "done"
   const optimisticUpvoted =
     fetcher.state !== "idle" ? !item.upvoted : item.upvoted
   const optimisticCount =
@@ -109,27 +111,37 @@ function FeedbackCard({ item }: { item: FeedbackItem }) {
       ? item.upvotesCount + (item.upvoted ? -1 : 1)
       : item.upvotesCount
 
+  const upvoteButton = isDone ? (
+    <div className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded border border-stroke text-muted opacity-40 flex-shrink-0 cursor-not-allowed">
+      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" />
+      </svg>
+      <span className="text-xs font-medium">{item.upvotesCount}</span>
+    </div>
+  ) : (
+    <fetcher.Form method="post" className="flex-shrink-0">
+      <input type="hidden" name="intent" value="upvote" />
+      <input type="hidden" name="feedbackItemId" value={item.id} />
+      <button
+        type="submit"
+        className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded border transition-colors ${
+          optimisticUpvoted
+            ? "border-accent text-accent bg-accent/10"
+            : "border-stroke text-muted hover:border-accent hover:text-accent"
+        }`}
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" />
+        </svg>
+        <span className="text-xs font-medium">{optimisticCount}</span>
+      </button>
+    </fetcher.Form>
+  )
+
   return (
     <div className="bg-card border border-stroke rounded-lg p-4">
       <div className="flex items-start gap-3">
-        {/* Upvote button */}
-        <fetcher.Form method="post" className="flex-shrink-0">
-          <input type="hidden" name="intent" value="upvote" />
-          <input type="hidden" name="feedbackItemId" value={item.id} />
-          <button
-            type="submit"
-            className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded border transition-colors ${
-              optimisticUpvoted
-                ? "border-accent text-accent bg-accent/10"
-                : "border-stroke text-muted hover:border-accent hover:text-accent"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" />
-            </svg>
-            <span className="text-xs font-medium">{optimisticCount}</span>
-          </button>
-        </fetcher.Form>
+        {upvoteButton}
 
         {/* Content */}
         <div className="flex-1 min-w-0">
@@ -202,6 +214,10 @@ function SubmitForm() {
 
 export default function Feedback() {
   const { items } = useLoaderData<typeof loader>()
+  const [doneOpen, setDoneOpen] = useState(false)
+
+  const activeItems = items.filter((i) => i.status !== "done")
+  const doneItems = items.filter((i) => i.status === "done")
 
   return (
     <div className="w-full flex flex-col">
@@ -217,19 +233,54 @@ export default function Feedback() {
       <div className="space-y-4">
         <SubmitForm />
 
-        {items.length === 0 ? (
+        {activeItems.length === 0 && doneItems.length === 0 ? (
           <p className="text-center text-muted py-8">
             Nenhuma sugestão aprovada ainda.
           </p>
         ) : (
-          <div className="space-y-2">
-            <h2 className="font-semibold text-sm text-muted uppercase tracking-wide">
-              Sugestões ({items.length})
-            </h2>
-            {items.map((item) => (
-              <FeedbackCard key={item.id} item={item} />
-            ))}
-          </div>
+          <>
+            {activeItems.length > 0 && (
+              <div className="space-y-2">
+                <h2 className="font-semibold text-sm text-muted uppercase tracking-wide">
+                  Sugestões ({activeItems.length})
+                </h2>
+                {activeItems.map((item) => (
+                  <FeedbackCard key={item.id} item={item} />
+                ))}
+              </div>
+            )}
+
+            {doneItems.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setDoneOpen((o) => !o)}
+                  className="flex items-center gap-2 text-sm text-muted hover:text-foreground transition-colors w-full"
+                >
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${doneOpen ? "rotate-90" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span className="font-semibold uppercase tracking-wide">
+                    Concluídos ({doneItems.length})
+                  </span>
+                </button>
+
+                {doneOpen && (
+                  <div className="space-y-2 mt-2">
+                    {doneItems.map((item) => (
+                      <FeedbackCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

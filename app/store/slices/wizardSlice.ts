@@ -44,6 +44,7 @@ const INITIAL_WIZARD_STATE: WizardState = {
     startingEquipment: { weapons: [], armor: [], items: [] },
     currencies: { tc: 0, tp: 0, to: 0 },
     originItemChoices: {},
+    originItemWeaponChoices: {},
   },
   computed: {
     totalLevel: 0,
@@ -188,6 +189,9 @@ const wizardSlice = createSlice({
     },
     setOriginItemChoices(state, action: PayloadAction<Record<number, string>>) {
       state.data.originItemChoices = action.payload
+    },
+    setOriginItemWeaponChoices(state, action: PayloadAction<Record<number, { id: string; name: string }>>) {
+      state.data.originItemWeaponChoices = action.payload
     },
 
     // Choice System

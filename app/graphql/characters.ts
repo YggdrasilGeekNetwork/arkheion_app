@@ -283,6 +283,7 @@ export const WIZARD_DATA_QUERY = `
       tormentaPowers: poderes(kind: "poder_tormenta") { id name description prerequisites }
       simpleWeapons: armas(category: "simples") { id name damage damageType critical range }
       martialWeapons: armas(category: "marciais") { id name damage damageType critical range }
+      exoticWeapons: armas(category: "exoticas") { id name damage damageType critical range }
     }
   }
 `

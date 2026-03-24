@@ -108,6 +108,7 @@ type ApiResponse = {
     tormentaPowers: ApiPoder[]
     simpleWeapons: ApiArma[]
     martialWeapons: ApiArma[]
+    exoticWeapons: ApiArma[]
   }
 }
 
@@ -344,10 +345,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
       tormentaPowers: mapPowers(rulebook.tormentaPowers),
       simpleWeapons: (rulebook.simpleWeapons || []).filter(w => w.id !== 'test_arma').map(w => ({ id: w.id, name: w.name, damage: w.damage, damageType: w.damageType, critical: w.critical, range: w.range })),
       martialWeapons: (rulebook.martialWeapons || []).map(w => ({ id: w.id, name: w.name, damage: w.damage, damageType: w.damageType, critical: w.critical, range: w.range })),
+      exoticWeapons: (rulebook.exoticWeapons || []).map(w => ({ id: w.id, name: w.name, damage: w.damage, damageType: w.damageType, critical: w.critical, range: w.range })),
     })
   } catch (err) {
     console.error('Failed to load wizard data:', err)
-    return json<WizardLoaderData>({ races: [], classes: [], origins: [], deities: [], skills: SKILLS, generalPowers: [], tormentaPowers: [], simpleWeapons: [], martialWeapons: [] })
+    return json<WizardLoaderData>({ races: [], classes: [], origins: [], deities: [], skills: SKILLS, generalPowers: [], tormentaPowers: [], simpleWeapons: [], martialWeapons: [], exoticWeapons: [] })
   }
 }
 
@@ -423,7 +425,10 @@ function buildCreateInput(wizardData: Record<string, any>, pendingChoices: Pendi
       chosenSkills,
       chosenPowers,
       chosenProficiencies: [],
-      chosenItems: Object.values(wizardData.originItemChoices ?? {}),
+      chosenItems: Object.entries(wizardData.originItemChoices ?? {}).map(([idx, optionText]) => {
+        const weaponChoice = wizardData.originItemWeaponChoices?.[Number(idx)]
+        return weaponChoice ? weaponChoice.name : optionText
+      }),
     },
     deityKey: wizardData.deity?.id ?? null,
     sheetAttributes: Object.fromEntries(

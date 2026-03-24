@@ -177,6 +177,8 @@ export type WizardState = {
     startingEquipment: EquipmentSelection
     currencies: { tc: number; tp: number; to: number }
     originItemChoices: Record<number, string>
+    // Specific weapon chosen for weapon-category origin items (e.g., Gladiador)
+    originItemWeaponChoices: Record<number, { id: string; name: string }>
 
     // Step 9: Toques Finais
     name: string
@@ -220,6 +222,7 @@ export const initialWizardState: WizardState = {
     startingEquipment: { weapons: [], armor: [], items: [] },
     currencies: { tc: 0, tp: 0, to: 0 },
     originItemChoices: {},
+    originItemWeaponChoices: {},
   },
   computed: {
     totalLevel: 0,
@@ -355,4 +358,5 @@ export type WizardLoaderData = {
   tormentaPowers: Array<{ id: string; name: string; description?: string; prerequisites?: PowerPrerequisite[] }>
   simpleWeapons: Array<{ id: string; name: string; damage?: string; damageType?: string; critical?: string; range?: string }>
   martialWeapons: Array<{ id: string; name: string; damage?: string; damageType?: string; critical?: string; range?: string }>
+  exoticWeapons: Array<{ id: string; name: string; damage?: string; damageType?: string; critical?: string; range?: string }>
 }

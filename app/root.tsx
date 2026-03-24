@@ -12,10 +12,26 @@ import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/lib/integration/react'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { store, persistor } from '~/store'
+import { getUserToken } from '~/utils/session.server'
+import { gqlRequest } from '~/utils/graphql.server'
+import { ME_QUERY } from '~/graphql/auth'
 
-export async function loader(_: LoaderFunctionArgs) {
+type MeResult = { me: { id: string; username: string; displayName: string | null; avatarUrl: string | null } | null }
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const token = await getUserToken(request)
+  let currentUser: MeResult['me'] = null
+  if (token) {
+    try {
+      const result = await gqlRequest<MeResult>(ME_QUERY, {}, token)
+      currentUser = result.data?.me ?? null
+    } catch {
+      // not logged in or token expired — ignore
+    }
+  }
   return json({
     googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
+    currentUser,
   })
 }
 

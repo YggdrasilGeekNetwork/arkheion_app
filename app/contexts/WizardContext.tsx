@@ -171,6 +171,7 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
       case 'SET_STARTING_EQUIPMENT': appDispatch(wizardActions.setStartingEquipment(action.payload)); break
       case 'SET_CURRENCIES': appDispatch(wizardActions.setCurrencies(action.payload)); break
       case 'SET_ORIGIN_ITEM_CHOICES': appDispatch(wizardActions.setOriginItemChoices(action.payload)); break
+      case 'SET_ORIGIN_ITEM_WEAPON_CHOICES': appDispatch(wizardActions.setOriginItemWeaponChoices(action.payload)); break
       case 'ADD_PENDING_CHOICES': appDispatch(wizardActions.addPendingChoices(action.payload)); break
       case 'REMOVE_PENDING_CHOICES_BY_SOURCE': appDispatch(wizardActions.removePendingChoicesBySource(action.payload)); break
       case 'RESOLVE_CHOICE': appDispatch(wizardActions.resolveChoice(action.payload)); break
@@ -731,6 +732,8 @@ export function WizardProvider({ children, loaderData }: WizardProviderProps) {
     }
 
     appDispatch(wizardActions.selectOrigin(originId ? { id: originId, name: originData?.name || originId } : null))
+    appDispatch(wizardActions.setOriginItemChoices({}))
+    appDispatch(wizardActions.setOriginItemWeaponChoices({}))
 
     if (originId && originData?.choices) {
       const newChoices: PendingChoice[] = originData.choices.map(choice => ({
