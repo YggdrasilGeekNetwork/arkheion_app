@@ -47,8 +47,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     throw new Response("Personagem não encontrado", { status: 404 })
   }
 
-  // TODO: mesaId comes from the character's mesa association
-  return json({ character: result.data.character, mesaId: "mesa-1" })
+  const mesaId: string | undefined = (result.data.character as any).mesaId ?? undefined
+  return json({ character: result.data.character, mesaId })
 }
 
 function CharacterSheetWrapper() {

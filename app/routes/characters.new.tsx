@@ -208,8 +208,8 @@ function transformClasses(classes: ApiClasse[], index: Map<string, ApiPoder>): C
       options: (c.skills?.choose_from || []).map(s => s.name),
     },
     proficiencies: {
-      weapons: (c.proficiencies?.weapons || []).map(w => w.charAt(0).toUpperCase() + w.slice(1)),
-      armors: (c.proficiencies?.armors || []).map(a => a.charAt(0).toUpperCase() + a.slice(1)),
+      weapons: (c.proficiencies?.weapons || []).map(w => w.toLowerCase()),
+      armors: (c.proficiencies?.armors || []).map(a => a.toLowerCase()),
       shields: c.proficiencies?.shields ?? false,
     },
     abilities: (c.abilities || []).map(id => {
@@ -438,12 +438,45 @@ function buildCreateInput(wizardData: Record<string, any>, pendingChoices: Pendi
     firstLevel: {
       classKey: firstClass?.id,
       skillPoints,
-      abilitiesChosen: wizardData.selectedAbilities ?? [],
-      powersChosen: wizardData.selectedPowers ?? [],
-      spellsChosen,
-      classChoices: Object.keys(classChoices).length > 0 ? classChoices : null,
+      abilitiesChosen: { class_abilities: wizardData.selectedAbilities ?? [] },
+      powersChosen: { granted_powers: wizardData.selectedPowers ?? [] },
+      spellsChosen: {
+        known_spells: (spellsChosen as string[]).map(id => ({ spell_key: id, circle: 1 })),
+      },
+      ...(Object.keys(classChoices).length > 0 ? { classChoices: { extra_data: classChoices } } : {}),
+    },
+    startingInventory: buildStartingInventory(wizardData),
+    startingCurrency: {
+      tc: wizardData.currencies?.tc ?? 0,
+      tp: wizardData.currencies?.tp ?? 0,
+      to: wizardData.currencies?.to ?? 0,
     },
   }
+}
+
+const FIXED_ITEM_KEYS = ['mochila', 'saco_de_dormir', 'traje_de_viajante']
+
+function buildStartingInventory(wizardData: Record<string, any>) {
+  const items: Array<{ itemKey: string; itemId: string; quantity: number }> = []
+
+  // Fixed items every character starts with
+  FIXED_ITEM_KEYS.forEach(key => {
+    items.push({ itemKey: key, itemId: key, quantity: 1 })
+  })
+
+  // Chosen weapons (simple + martial)
+  const weapons: Array<{ id: string }> = wizardData.startingEquipment?.weapons ?? []
+  weapons.forEach(w => {
+    items.push({ itemKey: w.id, itemId: `start-${w.id}`, quantity: 1 })
+  })
+
+  // Chosen armor (armors + shield)
+  const armor: Array<{ id: string }> = wizardData.startingEquipment?.armor ?? []
+  armor.forEach(a => {
+    items.push({ itemKey: a.id, itemId: `start-${a.id}`, quantity: 1 })
+  })
+
+  return items
 }
 
 // ── Action ──────────────────────────────────────────────────────────────────
